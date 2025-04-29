@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { authService } from "@/lib/services/auth";
+import { ArrowLeft } from "lucide-react";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -39,6 +40,14 @@ export default function SignUp() {
     <div className="container flex items-center justify-center min-h-screen py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
+          <div className="flex items-center gap-2 mb-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+          </div>
           <CardTitle className="text-2xl">Create an Account</CardTitle>
           <CardDescription>
             Sign up to start listing or finding sublets
