@@ -1,7 +1,14 @@
-import Link from "next/link"
-import { ArrowRight, Building, Calendar, MapPin, Search, Shield } from "lucide-react"
+import Link from "next/link";
+import {
+  ArrowRight,
+  Building,
+  Calendar,
+  MapPin,
+  Search,
+  Shield,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -13,23 +20,32 @@ export default function Home() {
             <span>SubletMatch</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/find" className="text-sm font-medium hover:text-primary">
+            <Link
+              href="/find"
+              className="text-sm font-medium hover:text-primary"
+            >
               Find a Sublet
             </Link>
-            <Link href="/list" className="text-sm font-medium hover:text-primary">
+            <Link
+              href="/list"
+              className="text-sm font-medium hover:text-primary"
+            >
               List Your Sublet
             </Link>
-            <Link href="/how-it-works" className="text-sm font-medium hover:text-primary">
+            <Link
+              href="/how-it-works"
+              className="text-sm font-medium hover:text-primary"
+            >
               How It Works
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/signin">
               <Button variant="ghost" size="sm">
                 Sign In
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/signup">
               <Button size="sm">Sign Up</Button>
             </Link>
           </div>
@@ -45,7 +61,8 @@ export default function Home() {
                     Find Your Perfect Summer Sublet
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Connect with people who need to sublease their apartment or find your ideal temporary home.
+                    Connect with people who need to sublease their apartment or
+                    find your ideal temporary home.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -78,9 +95,12 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">How SubletMatch Works</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                  How SubletMatch Works
+                </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  Our platform makes it easy to list or find a sublet for your summer plans.
+                  Our platform makes it easy to list or find a sublet for your
+                  summer plans.
                 </p>
               </div>
             </div>
@@ -91,7 +111,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">List Your Space</h3>
                 <p className="text-center text-muted-foreground">
-                  Create a detailed listing with photos, pricing, and availability dates.
+                  Create a detailed listing with photos, pricing, and
+                  availability dates.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
@@ -100,7 +121,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">Find a Sublet</h3>
                 <p className="text-center text-muted-foreground">
-                  Browse available sublets with filters for location, dates, and budget.
+                  Browse available sublets with filters for location, dates, and
+                  budget.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
@@ -109,7 +131,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">Connect Securely</h3>
                 <p className="text-center text-muted-foreground">
-                  Message potential sublessors or subletters directly through our platform.
+                  Message potential sublessors or subletters directly through
+                  our platform.
                 </p>
               </div>
             </div>
@@ -119,7 +142,9 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Featured Sublets</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                  Featured Sublets
+                </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
                   Check out some of our most popular listings.
                 </p>
@@ -137,7 +162,9 @@ export default function Home() {
                       />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-lg">Cozy Studio in Downtown</h3>
+                      <h3 className="font-semibold text-lg">
+                        Cozy Studio in Downtown
+                      </h3>
                       <div className="flex items-center gap-2 mt-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">New York, NY</span>
@@ -174,9 +201,12 @@ export default function Home() {
               </div>
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Ready to Get Started?</h2>
+                  <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+                    Ready to Get Started?
+                  </h2>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Join thousands of users who have successfully found their perfect summer sublet.
+                    Join thousands of users who have successfully found their
+                    perfect summer sublet.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -208,18 +238,27 @@ export default function Home() {
             &copy; {new Date().getFullYear()} SubletMatch. All rights reserved.
           </p>
           <div className="flex gap-4">
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="/terms"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Terms
             </Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="/privacy"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Privacy
             </Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="/contact"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               Contact
             </Link>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }
