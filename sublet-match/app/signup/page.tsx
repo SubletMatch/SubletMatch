@@ -14,23 +14,33 @@ import Link from "next/link";
 import { useState } from "react";
 import { authService } from "@/lib/services/auth";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     try {
       const result = await authService.signUp(email, username, password);
       if (!result.success) {
         setError(result.error);
+      } else {
+        // Redirect to signin page after successful signup
+        router.push("/signin");
       }
-      // Will implement actual sign-up logic when backend is ready
     } catch (err) {
       setError("An error occurred. Please try again.");
     }
@@ -94,6 +104,19 @@ export default function SignUp() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium">
+                Confirm Password
+              </label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
             <Button type="submit" className="w-full">
               Sign Up
@@ -112,4 +135,3 @@ export default function SignUp() {
     </div>
   );
 }
- 

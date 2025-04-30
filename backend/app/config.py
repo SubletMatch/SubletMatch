@@ -1,8 +1,8 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "temp"
-    SECRET_KEY: str = "your-secret-key-here"
+    DATABASE_URL: str
+    SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
 

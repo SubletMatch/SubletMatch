@@ -14,24 +14,32 @@ import Link from "next/link";
 import { useState } from "react";
 import { authService } from "@/lib/services/auth";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     try {
       const result = await authService.signIn(email, password);
       if (!result.success) {
-        setError(result.error);
+        setError(result.error || "Invalid email or password");
+      } else {
+        // Redirect to dashboard on successful sign in
+        router.push("/dashboard");
       }
-      // Will implement actual sign-in logic when backend is ready
     } catch (err) {
       setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,8 +89,8 @@ export default function SignIn() {
               />
             </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
         </CardContent>
@@ -98,4 +106,3 @@ export default function SignIn() {
     </div>
   );
 }
- 

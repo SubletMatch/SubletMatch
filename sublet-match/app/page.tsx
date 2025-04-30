@@ -84,8 +84,8 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/40 rounded-xl blur-3xl opacity-50" />
                 <img
                   alt="Modern apartment living room"
-                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center relative"
-                  src="/placeholder.svg?height=500&width=800"
+                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center relative transition-transform duration-300 ease-in-out hover:scale-105"
+                  src="/LandingPage_Atm.webp?height=500&width=800"
                 />
               </div>
             </div>
