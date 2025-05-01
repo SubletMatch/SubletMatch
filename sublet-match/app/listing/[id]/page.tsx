@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/lib/services/auth";
 import { useRouter } from "next/navigation";
-import { Map } from "../../components/map";
+import { Map } from "@/components/map";
 
 interface Listing {
   id: string;

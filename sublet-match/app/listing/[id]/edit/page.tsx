@@ -1,5 +1,5 @@
 import { listingService } from "@/lib/services/listing";
-import { EditListingForm } from "./edit-form";
+import { EditListingForm } from "@/components/edit-listing-form";
 
 interface PageParams {
   id: string;

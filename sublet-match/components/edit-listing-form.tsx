@@ -21,6 +21,7 @@ interface EditListingFormProps {
     bathrooms: number;
     available_from: string;
     available_to: string;
+    amenities: string;
   };
 }
 
