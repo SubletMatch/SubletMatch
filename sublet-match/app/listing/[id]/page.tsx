@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { use } from "react";
+import Link from "next/link";
 import {
   Bath,
   Bed,
@@ -13,62 +14,143 @@ import {
   MapPin,
   MessageSquare,
   Share2,
-} from "lucide-react"
+  User,
+} from "lucide-react";
+import Image from "next/image";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { authService } from "@/lib/services/auth";
+import { useRouter } from "next/navigation";
 
-// Mock data for a single listing
-const mockListing = {
-  id: 1,
-  title: "Spacious 1BR in Downtown",
-  location: "New York, NY",
-  dates: "Jun 1 - Aug 31, 2023",
-  price: 1800,
-  description:
-    "This beautiful one-bedroom apartment is located in the heart of downtown. It features hardwood floors, high ceilings, and large windows that let in plenty of natural light. The kitchen is fully equipped with modern appliances, and the bathroom has been recently renovated. The building has a rooftop terrace with stunning views of the city skyline. It's within walking distance to restaurants, shops, and public transportation. Perfect for a summer sublet!",
-  bedrooms: 1,
-  bathrooms: 1,
-  amenities: ["Wi-Fi", "Air Conditioning", "Washer/Dryer", "Dishwasher", "Elevator", "Gym", "Rooftop Access"],
-  images: [
-    "/placeholder.svg?height=500&width=800&text=Living Room",
-    "/placeholder.svg?height=500&width=800&text=Bedroom",
-    "/placeholder.svg?height=500&width=800&text=Kitchen",
-    "/placeholder.svg?height=500&width=800&text=Bathroom",
-  ],
-  host: {
-    name: "Alex Johnson",
-    image: "/placeholder.svg?height=100&width=100&text=AJ",
-    responseRate: "95%",
-    responseTime: "within a few hours",
-  },
+interface Listing {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  address: string;
+  city: string;
+  state: string;
+  property_type: string;
+  bedrooms: number;
+  bathrooms: number;
+  available_from: string;
+  available_to: string;
+  images: { image_url: string }[];
+  user: {
+    name: string;
+    email: string;
+  };
 }
 
-export default function ListingPage({ params }: { params: { id: string } }) {
-  const { toast } = useToast()
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [message, setMessage] = useState("")
+interface PageParams {
+  id: string;
+}
+
+export default function ListingPage({
+  params,
+}: {
+  params: Promise<PageParams>;
+}) {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [message, setMessage] = useState("");
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [listingId, setListingId] = useState<string | null>(null);
+
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
+
+  useEffect(() => {
+    if (id) {
+      setListingId(id);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!listingId) return;
+
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/v1/listings/${listingId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authService.getToken()}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch listing");
+        }
+
+        const data = await response.json();
+        setListing(data);
+      } catch (err) {
+        setError("Failed to load listing");
+        console.error("Error fetching listing:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (authService.isAuthenticated()) {
+      fetchListing();
+    } else {
+      router.push("/signin");
+    }
+  }, [router, listingId]);
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? mockListing.images.length - 1 : prev - 1))
-  }
+    if (!listing?.images) return;
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? listing.images.length - 1 : prev - 1
+    );
+  };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === mockListing.images.length - 1 ? 0 : prev + 1))
-  }
+    if (!listing?.images) return;
+    setCurrentImageIndex((prev) =>
+      prev === listing.images.length - 1 ? 0 : prev + 1
+    );
+  };
 
   const handleSendMessage = () => {
     if (message.trim()) {
       toast({
         title: "Message sent!",
         description: "Your message has been sent to the host.",
-      })
-      setMessage("")
+      });
+      setMessage("");
     }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container py-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !listing) {
+    return (
+      <div className="container py-8">
+        <div className="text-center text-red-500">
+          {error || "Listing not found"}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -82,11 +164,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">
-                Sign In
+                Dashboard
               </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button size="sm">Sign Up</Button>
             </Link>
           </div>
         </div>
@@ -94,9 +173,12 @@ export default function ListingPage({ params }: { params: { id: string } }) {
       <main className="flex-1">
         <div className="container py-8">
           <div className="flex items-center mb-6">
-            <Link href="/find" className="flex items-center text-muted-foreground hover:text-foreground">
+            <Link
+              href="/mylistings"
+              className="flex items-center text-muted-foreground hover:text-foreground"
+            >
               <ChevronLeft className="mr-1 h-4 w-4" />
-              Back to Listings
+              Back to My Listings
             </Link>
           </div>
 
@@ -104,9 +186,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             <div className="lg:col-span-2">
               <div className="relative overflow-hidden rounded-xl mb-6">
                 <div className="aspect-video relative">
-                  <img
-                    src={mockListing.images[currentImageIndex] || "/placeholder.svg"}
-                    alt={`Image ${currentImageIndex + 1} of ${mockListing.title}`}
+                  <Image
+                    src={`http://localhost:8000${listing.images[currentImageIndex]?.image_url}`}
+                    alt={`Image ${currentImageIndex + 1} of ${listing.title}`}
+                    fill
                     className="w-full h-full object-cover"
                   />
                   <Button
@@ -127,20 +210,23 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   </Button>
                 </div>
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
-                  {mockListing.images.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`h-2 w-2 rounded-full ${
-                        index === currentImageIndex ? "bg-primary" : "bg-background/80"
-                      }`}
-                      onClick={() => setCurrentImageIndex(index)}
-                    />
+                  {listing.images.map((image) => (
+                    <div key={image.id} className="relative aspect-square">
+                      <Image
+                        src={`http://localhost:8000${image.image_url}`}
+                        alt={`Listing image ${image.id}`}
+                        fill
+                        className="object-cover rounded-lg"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                <h1 className="text-3xl font-bold tracking-tight">{mockListing.title}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {listing.title}
+                </h1>
                 <div className="flex items-center gap-2 mt-2 md:mt-0">
                   <Button variant="outline" size="sm">
                     <Heart className="mr-1 h-4 w-4" />
@@ -155,24 +241,38 @@ export default function ListingPage({ params }: { params: { id: string } }) {
 
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <MapPin className="h-4 w-4" />
-                <span>{mockListing.location}</span>
+                <span>
+                  {listing.address}, {listing.city}, {listing.state}
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-muted-foreground mb-4">
                 <Calendar className="h-4 w-4" />
-                <span>Available: {mockListing.dates}</span>
+                <span>
+                  Available:{" "}
+                  {new Date(listing.available_from).toLocaleDateString()} -{" "}
+                  {new Date(listing.available_to).toLocaleDateString()}
+                </span>
               </div>
 
               <div className="flex flex-wrap gap-4 mb-6">
                 <div className="flex items-center gap-1">
                   <Bed className="h-5 w-5 text-muted-foreground" />
-                  <span>{mockListing.bedrooms} Bedroom</span>
+                  <span>
+                    {listing.bedrooms} Bedroom
+                    {listing.bedrooms !== 1 ? "s" : ""}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Bath className="h-5 w-5 text-muted-foreground" />
-                  <span>{mockListing.bathrooms} Bathroom</span>
+                  <span>
+                    {listing.bathrooms} Bathroom
+                    {listing.bathrooms !== 1 ? "s" : ""}
+                  </span>
                 </div>
-                <div className="font-medium text-lg">${mockListing.price}/month</div>
+                <div className="font-medium text-lg">
+                  ${listing.price}/month
+                </div>
               </div>
 
               <Tabs defaultValue="description" className="mb-8">
@@ -182,21 +282,21 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   <TabsTrigger value="location">Location</TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" className="mt-4">
-                  <p className="text-muted-foreground">{mockListing.description}</p>
+                  <p className="text-muted-foreground">{listing.description}</p>
                 </TabsContent>
                 <TabsContent value="amenities" className="mt-4">
                   <ul className="grid grid-cols-2 gap-2">
-                    {mockListing.amenities.map((amenity) => (
-                      <li key={amenity} className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        {amenity}
-                      </li>
-                    ))}
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      {listing.property_type}
+                    </li>
                   </ul>
                 </TabsContent>
                 <TabsContent value="location" className="mt-4">
                   <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                    <p className="text-muted-foreground">Map would be displayed here</p>
+                    <p className="text-muted-foreground">
+                      Map would be displayed here
+                    </p>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -206,16 +306,16 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               <Card className="sticky top-24">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="h-12 w-12 rounded-full overflow-hidden">
-                      <img
-                        src={mockListing.host.image || "/placeholder.svg"}
-                        alt={mockListing.host.name}
-                        className="h-full w-full object-cover"
-                      />
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Hosted by {mockListing.host.name}</h3>
-                      <p className="text-sm text-muted-foreground">Response rate: {mockListing.host.responseRate}</p>
+                      <h3 className="font-medium">
+                        Hosted by {listing?.user?.name || "Unknown Host"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {listing?.user?.email || "No email provided"}
+                      </p>
                     </div>
                   </div>
 
@@ -252,5 +352,5 @@ export default function ListingPage({ params }: { params: { id: string } }) {
         </div>
       </footer>
     </div>
-  )
+  );
 }

@@ -18,9 +18,12 @@ export const authService = {
 
       const data = await response.json();
       // Store the token in localStorage
-      localStorage.setItem("token", data.access_token);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", data.access_token);
+      }
       return { success: true, token: data.access_token };
     } catch (error) {
+      console.error("Sign in error:", error);
       return { success: false, error: "Network error occurred" };
     }
   },
@@ -46,27 +49,48 @@ export const authService = {
 
       const data = await response.json();
       // Store the token in localStorage
-      localStorage.setItem("token", data.access_token);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", data.access_token);
+      }
       return { success: true, token: data.access_token };
     } catch (error) {
+      console.error("Sign up error:", error);
       return { success: false, error: "Network error occurred" };
     }
   },
 
   getToken(): string | null {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("token");
+    if (typeof window === "undefined") {
+      return null;
     }
-    return null;
+    try {
+      return localStorage.getItem("token");
+    } catch (error) {
+      console.error("Error getting token:", error);
+      return null;
+    }
   },
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    if (typeof window === "undefined") {
+      return false;
+    }
+    try {
+      return !!this.getToken();
+    } catch (error) {
+      console.error("Error checking authentication:", error);
+      return false;
+    }
   },
 
   logout(): void {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") {
+      return;
+    }
+    try {
       localStorage.removeItem("token");
+    } catch (error) {
+      console.error("Error logging out:", error);
     }
   },
 };

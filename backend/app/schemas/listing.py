@@ -27,11 +27,13 @@ class ListingBase(BaseModel):
     bathrooms: float = Field(gt=0)
     available_from: datetime
     available_to: datetime
+    host: Optional[str] = None
 
 class ListingCreate(ListingBase):
     pass
 
 class ListingImageBase(BaseModel):
+    listing_id: UUID
     image_url: str
 
 class ListingImageCreate(ListingImageBase):
@@ -39,7 +41,6 @@ class ListingImageCreate(ListingImageBase):
 
 class ListingImage(ListingImageBase):
     id: UUID
-    listing_id: UUID
     created_at: datetime
 
     class Config:
@@ -66,17 +67,16 @@ class ListingUpdate(ListingBase):
     bathrooms: Optional[float] = None
     available_from: Optional[datetime] = None
     available_to: Optional[datetime] = None
-    status: Optional[str] = None
+    host: Optional[str] = None
 
 class ListingInDB(ListingBase):
     id: UUID
     user_id: UUID
-    status: str
     created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True
 
 class ListingResponse(ListingInDB):
-    pass 
+    images: List[ListingImage] = []
+    user: dict 

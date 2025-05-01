@@ -1,10 +1,17 @@
 import axios from "axios";
+import { authService } from "@/lib/services/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export interface ListingImage {
+  id: string;
+  listing_id: string;
+  created_at: string;
+  image_url: string;
+}
+
 export interface Listing {
-  id: number;
-  user_id: string;
+  id: string;
   title: string;
   description: string;
   price: number;
@@ -16,9 +23,14 @@ export interface Listing {
   bathrooms: number;
   available_from: string;
   available_to: string;
-  status: string;
   created_at: string;
-  updated_at: string;
+  user_id: string;
+  host: string;
+  images: ListingImage[];
+  user: {
+    name: string;
+    email: string;
+  };
 }
 
 export interface CreateListingData {
@@ -33,9 +45,34 @@ export interface CreateListingData {
   bathrooms: number;
   available_from: string;
   available_to: string;
+  host: string;
+  images: File[]; // Changed to handle File objects for image upload
 }
 
-export const listingService = {
+class ListingService {
+  private baseUrl = "http://localhost:8000/api/v1";
+
+  async getMyListings(): Promise<Listing[]> {
+    const token = authService.getToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    const response = await fetch(`${this.baseUrl}/listings/my`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error fetching listings:", errorData);
+      throw new Error(errorData.detail || "Failed to fetch listings");
+    }
+
+    return await response.json();
+  }
+
   async createListing(
     data: CreateListingData,
     token: string
@@ -43,12 +80,31 @@ export const listingService = {
     try {
       console.log("Creating listing with data:", data);
 
-      const response = await axios.post(`${API_URL}/api/v1/listings/`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      // Create FormData to handle file uploads
+      const formData = new FormData();
+
+      // Add listing data
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== "images") {
+          formData.append(key, value.toString());
+        }
       });
+
+      // Add images
+      data.images.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      const response = await axios.post(
+        `${API_URL}/api/v1/listings/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       return response.data;
     } catch (error: any) {
@@ -59,7 +115,7 @@ export const listingService = {
       });
       throw error;
     }
-  },
+  }
 
   async getListings(): Promise<Listing[]> {
     try {
@@ -69,26 +125,46 @@ export const listingService = {
       console.error("Error fetching listings:", error);
       throw error;
     }
-  },
+  }
 
   async getListing(id: string): Promise<Listing> {
     const response = await axios.get(`${API_URL}/api/v1/listings/${id}`);
     return response.data;
-  },
+  }
 
   async updateListing(
     id: string,
     data: Partial<CreateListingData>,
     token: string
   ): Promise<Listing> {
-    const response = await axios.put(`${API_URL}/api/v1/listings/${id}`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+    const formData = new FormData();
+
+    // Add listing data
+    Object.entries(data).forEach(([key, value]) => {
+      if (key !== "images" && value !== undefined) {
+        formData.append(key, value.toString());
+      }
     });
+
+    // Add images if they exist
+    if (data.images) {
+      data.images.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
+
+    const response = await axios.put(
+      `${API_URL}/api/v1/listings/${id}`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
     return response.data;
-  },
+  }
 
   async deleteListing(id: string, token: string): Promise<void> {
     await axios.delete(`${API_URL}/api/v1/listings/${id}`, {
@@ -96,7 +172,7 @@ export const listingService = {
         Authorization: `Bearer ${token}`,
       },
     });
-  },
-};
+  }
+}
 
-export default listingService;
+export const listingService = new ListingService();

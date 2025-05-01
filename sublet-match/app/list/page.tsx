@@ -113,6 +113,16 @@ export default function ListPage() {
   const [propertyType, setPropertyType] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    price: "",
+    address: "",
+    city: "",
+    bedrooms: "",
+    bathrooms: "",
+  });
 
   useEffect(() => {
     // Check if user is authenticated
@@ -120,6 +130,16 @@ export default function ListPage() {
       router.push("/signin");
     }
   }, [router]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -142,87 +162,76 @@ export default function ListPage() {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-    const values = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      price: formData.get("price") as string,
-      address: formData.get("address") as string,
-      city: formData.get("city") as string,
-      bedrooms: formData.get("bedrooms") as string,
-      bathrooms: formData.get("bathrooms") as string,
-    };
+    setError("");
 
     try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error("Not authenticated");
+      }
+
+      // Create listing first
       const listingData = {
-        title: values.title,
-        description: values.description,
-        price: Number(values.price),
-        address: values.address,
-        city: values.city,
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        address: formData.address,
+        city: formData.city,
         state: state,
         property_type: propertyType,
-        bedrooms: Number(values.bedrooms),
-        bathrooms: Number(values.bathrooms),
-        available_from: date.from.toISOString(),
-        available_to: date.to.toISOString(),
+        bedrooms: parseInt(formData.bedrooms),
+        bathrooms: parseFloat(formData.bathrooms),
+        available_from: new Date(date.from).toISOString(),
+        available_to: new Date(date.to).toISOString(),
+        host: "Active", // Default host status
       };
 
-      console.log(
-        "Sending listing data:",
-        JSON.stringify(listingData, null, 2)
-      );
-
-      // First, create the listing
-      const listingResponse = await fetch(
+      const response = await fetch(
         "http://localhost:8000/api/v1/listings/create",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authService.getToken()}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(listingData),
         }
       );
 
-      if (!listingResponse.ok) {
-        const error = await listingResponse.json();
-        console.error("Error creating listing:", error);
-        throw new Error(error.detail || "Error creating listing");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create listing");
       }
 
-      const listing = await listingResponse.json();
+      const listing = await response.json();
       console.log("Created listing:", listing);
 
-      // Then, upload images if any
+      // Upload images if any
       if (images.length > 0) {
-        const imageFormData = new FormData();
-        images.forEach((image) => {
-          imageFormData.append("images", image);
-        });
-
         console.log("Uploading images:", images);
+
+        const formData = new FormData();
+        images.forEach((file) => {
+          formData.append("images", file);
+        });
 
         const imageResponse = await fetch(
           `http://localhost:8000/api/v1/listings/${listing.id}/images`,
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${authService.getToken()}`,
+              Authorization: `Bearer ${token}`,
             },
-            body: imageFormData,
+            body: formData,
           }
         );
 
         if (!imageResponse.ok) {
-          const error = await imageResponse.json();
-          console.error("Error uploading images:", error);
-          throw new Error(error.detail || "Error uploading images");
+          const errorData = await imageResponse.json();
+          throw new Error(errorData.detail || "Failed to upload images");
         }
 
         const uploadedImages = await imageResponse.json();
@@ -235,16 +244,9 @@ export default function ListPage() {
       });
 
       router.push("/dashboard");
-    } catch (error) {
-      console.error("Error in handleSubmit:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to create listing. Please try again.",
-        variant: "destructive",
-      });
+    } catch (err: any) {
+      console.error("Error creating listing:", err);
+      setError(err.message || "Failed to create listing");
     } finally {
       setIsLoading(false);
     }
@@ -279,6 +281,8 @@ export default function ListPage() {
                     <Input
                       id="title"
                       name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
                       placeholder="e.g., Spacious 2BR Apartment in Downtown"
                       required
                     />
@@ -293,6 +297,8 @@ export default function ListPage() {
                         id="price"
                         name="price"
                         type="number"
+                        value={formData.price}
+                        onChange={handleInputChange}
                         min="0"
                         step="100"
                         placeholder="e.g., 1500"
@@ -310,6 +316,8 @@ export default function ListPage() {
                   <Textarea
                     id="description"
                     name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
                     placeholder="Describe your property, including amenities, nearby attractions, and any special features..."
                     className="min-h-[120px]"
                     required
@@ -324,6 +332,8 @@ export default function ListPage() {
                     <Input
                       id="address"
                       name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
                       placeholder="e.g., 123 Main St"
                       required
                     />
@@ -335,6 +345,8 @@ export default function ListPage() {
                     <Input
                       id="city"
                       name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
                       placeholder="e.g., New York"
                       required
                     />
@@ -396,6 +408,8 @@ export default function ListPage() {
                         id="bedrooms"
                         name="bedrooms"
                         type="number"
+                        value={formData.bedrooms}
+                        onChange={handleInputChange}
                         min="0"
                         step="1"
                         placeholder="e.g., 2"
@@ -414,6 +428,8 @@ export default function ListPage() {
                         id="bathrooms"
                         name="bathrooms"
                         type="number"
+                        value={formData.bathrooms}
+                        onChange={handleInputChange}
                         min="0"
                         step="0.5"
                         placeholder="e.g., 1.5"
