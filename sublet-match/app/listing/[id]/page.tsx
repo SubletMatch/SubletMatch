@@ -176,7 +176,7 @@ export default function ListingPage({
         <div className="container py-8">
           <div className="flex items-center mb-6">
             <Link
-              href="/mylistings"
+              href="/dashboard"
               className="flex items-center text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
