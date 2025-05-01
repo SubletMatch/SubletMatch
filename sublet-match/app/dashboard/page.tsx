@@ -1,13 +1,33 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Building, ChevronRight, Edit, Home, Inbox, LogOut, Plus, Settings, User } from "lucide-react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Building,
+  ChevronRight,
+  Edit,
+  Home,
+  Inbox,
+  LogOut,
+  Plus,
+  Settings,
+  User,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { userService } from "@/app/services/user";
+import { authService } from "@/lib/services/auth";
+import { useRouter } from "next/navigation";
 
 // Mock data for user listings
 const mockListings = [
@@ -29,7 +49,7 @@ const mockListings = [
     image: "/placeholder.svg?height=300&width=500&text=Apartment 2",
     status: "draft",
   },
-]
+];
 
 // Mock data for messages
 const mockMessages = [
@@ -37,7 +57,8 @@ const mockMessages = [
     id: 1,
     from: "Sarah Johnson",
     avatar: "/placeholder.svg?height=40&width=40&text=SJ",
-    message: "Hi, I'm interested in your apartment in New York. Is it still available for the dates listed?",
+    message:
+      "Hi, I'm interested in your apartment in New York. Is it still available for the dates listed?",
     date: "2 hours ago",
     listing: "Spacious 1BR in Downtown",
     unread: true,
@@ -46,7 +67,8 @@ const mockMessages = [
     id: 2,
     from: "Michael Chen",
     avatar: "/placeholder.svg?height=40&width=40&text=MC",
-    message: "Hello, I was wondering if the price is negotiable for a longer stay?",
+    message:
+      "Hello, I was wondering if the price is negotiable for a longer stay?",
     date: "Yesterday",
     listing: "Spacious 1BR in Downtown",
     unread: false,
@@ -60,10 +82,45 @@ const mockMessages = [
     listing: "Spacious 1BR in Downtown",
     unread: false,
   },
-]
+];
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("listings")
+  const [activeTab, setActiveTab] = useState("listings");
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = authService.getToken();
+      if (!token) {
+        router.push("/signin");
+        return;
+      }
+
+      try {
+        const user = await userService.getCurrentUser(token);
+        setUserName(user.name);
+        setUserEmail(user.email);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        setError("Failed to load user data. Please try again.");
+        // If unauthorized, redirect to sign in
+        if (error.response?.status === 401) {
+          authService.logout();
+          router.push("/signin");
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
+
+  const handleLogout = () => {
+    authService.logout();
+    router.push("/signin");
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -74,11 +131,9 @@ export default function DashboardPage() {
             <span>SubletMatch</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Link>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
             </Button>
           </div>
         </div>
@@ -91,22 +146,38 @@ export default function DashboardPage() {
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-medium">John Doe</p>
-                <p className="text-xs text-muted-foreground">john.doe@example.com</p>
+                <p className="font-medium">{userName || "Loading..."}</p>
+                <p className="text-xs text-muted-foreground">
+                  {userEmail || "Loading..."}
+                </p>
               </div>
             </div>
             <Separator />
             <nav className="grid gap-1 py-2">
-              <Button variant="ghost" className="justify-start" onClick={() => setActiveTab("listings")}>
+              <Button
+                variant="ghost"
+                className="justify-start"
+                onClick={() => setActiveTab("listings")}
+              >
                 <Home className="mr-2 h-4 w-4" />
                 My Listings
               </Button>
-              <Button variant="ghost" className="justify-start" onClick={() => setActiveTab("messages")}>
+              <Button
+                variant="ghost"
+                className="justify-start"
+                onClick={() => setActiveTab("messages")}
+              >
                 <Inbox className="mr-2 h-4 w-4" />
                 Messages
-                <span className="ml-auto bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">1</span>
+                <span className="ml-auto bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                  1
+                </span>
               </Button>
-              <Button variant="ghost" className="justify-start" onClick={() => setActiveTab("settings")}>
+              <Button
+                variant="ghost"
+                className="justify-start"
+                onClick={() => setActiveTab("settings")}
+              >
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </Button>
@@ -115,7 +186,11 @@ export default function DashboardPage() {
         </aside>
         <main className="flex-1 overflow-auto">
           <div className="container py-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
               <div className="flex items-center justify-between">
                 <TabsList>
                   <TabsTrigger value="listings" className="relative">
@@ -153,8 +228,12 @@ export default function DashboardPage() {
                       <CardHeader className="p-4 pb-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <CardTitle className="text-lg">{listing.title}</CardTitle>
-                            <CardDescription>{listing.location}</CardDescription>
+                            <CardTitle className="text-lg">
+                              {listing.title}
+                            </CardTitle>
+                            <CardDescription>
+                              {listing.location}
+                            </CardDescription>
                           </div>
                           <div
                             className={`px-2 py-1 rounded-full text-xs ${
@@ -168,8 +247,12 @@ export default function DashboardPage() {
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 pb-2">
-                        <div className="text-sm text-muted-foreground">{listing.dates}</div>
-                        <div className="font-medium mt-1">${listing.price}/month</div>
+                        <div className="text-sm text-muted-foreground">
+                          {listing.dates}
+                        </div>
+                        <div className="font-medium mt-1">
+                          ${listing.price}/month
+                        </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-2 flex justify-between">
                         <Button variant="outline" size="sm">
@@ -191,7 +274,12 @@ export default function DashboardPage() {
               <TabsContent value="messages" className="space-y-6">
                 <div className="space-y-4">
                   {mockMessages.map((message) => (
-                    <Card key={message.id} className={message.unread ? "border-primary/50 shadow-sm" : ""}>
+                    <Card
+                      key={message.id}
+                      className={
+                        message.unread ? "border-primary/50 shadow-sm" : ""
+                      }
+                    >
                       <CardHeader className="p-4 pb-2">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-3">
@@ -203,15 +291,23 @@ export default function DashboardPage() {
                               />
                             </div>
                             <div>
-                              <CardTitle className="text-base">{message.from}</CardTitle>
-                              <CardDescription>Re: {message.listing}</CardDescription>
+                              <CardTitle className="text-base">
+                                {message.from}
+                              </CardTitle>
+                              <CardDescription>
+                                Re: {message.listing}
+                              </CardDescription>
                             </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">{message.date}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {message.date}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 pt-2 pb-2">
-                        <p className="text-sm text-muted-foreground line-clamp-2">{message.message}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {message.message}
+                        </p>
                       </CardContent>
                       <CardFooter className="p-4 pt-2 flex justify-end">
                         <Button size="sm">Reply</Button>
@@ -225,26 +321,33 @@ export default function DashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Account Settings</CardTitle>
-                    <CardDescription>Manage your account information and preferences.</CardDescription>
+                    <CardDescription>
+                      Manage your account information and preferences.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <h3 className="font-medium">Profile Information</h3>
                       <p className="text-sm text-muted-foreground">
-                        Your profile information is used to identify you on the platform.
+                        Your profile information is used to identify you on the
+                        platform.
                       </p>
                       <Button variant="outline">Edit Profile</Button>
                     </div>
                     <Separator />
                     <div className="space-y-2">
                       <h3 className="font-medium">Notification Preferences</h3>
-                      <p className="text-sm text-muted-foreground">Manage how and when you receive notifications.</p>
+                      <p className="text-sm text-muted-foreground">
+                        Manage how and when you receive notifications.
+                      </p>
                       <Button variant="outline">Manage Notifications</Button>
                     </div>
                     <Separator />
                     <div className="space-y-2">
                       <h3 className="font-medium">Payment Methods</h3>
-                      <p className="text-sm text-muted-foreground">Add or remove payment methods for your account.</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add or remove payment methods for your account.
+                      </p>
                       <Button variant="outline">Manage Payments</Button>
                     </div>
                   </CardContent>
@@ -266,5 +369,5 @@ export default function DashboardPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

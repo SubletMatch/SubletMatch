@@ -1,376 +1,488 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Building, Calendar, ChevronLeft, ImagePlus, Upload } from "lucide-react"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Building,
+  Calendar,
+  MapPin,
+  DollarSign,
+  Home,
+  Bed,
+  Bath,
+  ImagePlus,
+  X,
+} from "lucide-react";
+import Image from "next/image";
 
-import { Button } from "@/components/ui/button"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Card, CardContent } from "@/components/ui/card"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { authService } from "@/lib/services/auth";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const formSchema = z.object({
-  title: z.string().min(5, { message: "Title must be at least 5 characters" }),
-  price: z.string().min(1, { message: "Price is required" }),
-  description: z.string().min(20, { message: "Description must be at least 20 characters" }),
-  city: z.string().min(1, { message: "City is required" }),
-  state: z.string().min(1, { message: "State is required" }),
-  address: z.string().min(1, { message: "Address is required" }),
-  propertyType: z.string().min(1, { message: "Property type is required" }),
-  bedrooms: z.string().min(1, { message: "Number of bedrooms is required" }),
-  bathrooms: z.string().min(1, { message: "Number of bathrooms is required" }),
-})
+const STATES = [
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+];
 
-export default function ListingForm() {
-  const { toast } = useToast()
-  const [date, setDate] = useState<{ from: Date; to: Date | undefined }>({
+const PROPERTY_TYPES = [
+  "Apartment",
+  "House",
+  "Condo",
+  "Townhouse",
+  "Studio",
+  "Loft",
+  "Duplex",
+  "Room",
+];
+
+export default function ListPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [date, setDate] = useState({
     from: new Date(),
-    to: undefined,
-  })
+    to: new Date(),
+  });
+  const [state, setState] = useState("");
+  const [propertyType, setPropertyType] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      price: "",
-      description: "",
-      city: "",
-      state: "",
-      address: "",
-      propertyType: "",
-      bedrooms: "",
-      bathrooms: "",
-    },
-  })
+  useEffect(() => {
+    // Check if user is authenticated
+    if (!authService.isAuthenticated()) {
+      router.push("/signin");
+    }
+  }, [router]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    toast({
-      title: "Listing created!",
-      description: "Your sublet has been successfully listed.",
-    })
-    console.log(values)
-    // In a real app, we would submit the form data to the server
-  }
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newImages = Array.from(e.target.files);
+      setImages([...images, ...newImages]);
+
+      // Create previews for new images
+      newImages.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews((prev) => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const values = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      price: formData.get("price") as string,
+      address: formData.get("address") as string,
+      city: formData.get("city") as string,
+      bedrooms: formData.get("bedrooms") as string,
+      bathrooms: formData.get("bathrooms") as string,
+    };
+
+    try {
+      const listingData = {
+        title: values.title,
+        description: values.description,
+        price: Number(values.price),
+        address: values.address,
+        city: values.city,
+        state: state,
+        property_type: propertyType,
+        bedrooms: Number(values.bedrooms),
+        bathrooms: Number(values.bathrooms),
+        available_from: date.from.toISOString(),
+        available_to: date.to.toISOString(),
+      };
+
+      console.log(
+        "Sending listing data:",
+        JSON.stringify(listingData, null, 2)
+      );
+
+      // First, create the listing
+      const listingResponse = await fetch(
+        "http://localhost:8000/api/v1/listings/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authService.getToken()}`,
+          },
+          body: JSON.stringify(listingData),
+        }
+      );
+
+      if (!listingResponse.ok) {
+        const error = await listingResponse.json();
+        console.error("Error creating listing:", error);
+        throw new Error(error.detail || "Error creating listing");
+      }
+
+      const listing = await listingResponse.json();
+      console.log("Created listing:", listing);
+
+      // Then, upload images if any
+      if (images.length > 0) {
+        const imageFormData = new FormData();
+        images.forEach((image) => {
+          imageFormData.append("images", image);
+        });
+
+        console.log("Uploading images:", images);
+
+        const imageResponse = await fetch(
+          `http://localhost:8000/api/v1/listings/${listing.id}/images`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${authService.getToken()}`,
+            },
+            body: imageFormData,
+          }
+        );
+
+        if (!imageResponse.ok) {
+          const error = await imageResponse.json();
+          console.error("Error uploading images:", error);
+          throw new Error(error.detail || "Error uploading images");
+        }
+
+        const uploadedImages = await imageResponse.json();
+        console.log("Uploaded images:", uploadedImages);
+      }
+
+      toast({
+        title: "Listing created!",
+        description: "Your listing has been created successfully.",
+      });
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to create listing. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <div className="flex items-center gap-2 font-bold text-xl">
             <Building className="h-6 w-6 text-primary" />
             <span>SubletMatch</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button size="sm">Sign Up</Button>
-            </Link>
           </div>
         </div>
       </header>
-      <main className="flex-1 container py-10">
-        <div className="mx-auto max-w-3xl">
-          <div className="flex items-center mb-6">
-            <Link href="/" className="flex items-center text-muted-foreground hover:text-foreground">
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Back to Home
-            </Link>
-          </div>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">List Your Sublet</h1>
-            <p className="text-muted-foreground mt-2">
-              Fill out the form below to create your sublet listing. The more details you provide, the better!
-            </p>
-          </div>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <h2 className="text-xl font-semibold">Basic Information</h2>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Listing Title</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g., Cozy Studio in Downtown" {...field} />
-                              </FormControl>
-                              <FormDescription>A catchy title will help your listing stand out.</FormDescription>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="price"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Monthly Price ($)</FormLabel>
-                              <FormControl>
-                                <Input type="number" placeholder="e.g., 1200" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Describe your space, amenities, neighborhood, etc."
-                                className="min-h-[120px]"
-                                {...field}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
+      <main className="flex-1">
+        <div className="container py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create a New Listing</CardTitle>
+              <CardDescription>
+                Fill out the form below to create your listing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="title" className="text-sm font-medium">
+                      Title
+                    </label>
+                    <Input
+                      id="title"
+                      name="title"
+                      placeholder="e.g., Spacious 2BR Apartment in Downtown"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="price" className="text-sm font-medium">
+                      Price per month
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="price"
+                        name="price"
+                        type="number"
+                        min="0"
+                        step="100"
+                        placeholder="e.g., 1500"
+                        className="pl-8"
+                        required
                       />
-                    </div>
-
-                    <div className="space-y-4">
-                      <h2 className="text-xl font-semibold">Location</h2>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>City</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g., New York" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="state"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>State</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select state" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="ny">New York</SelectItem>
-                                  <SelectItem value="ca">California</SelectItem>
-                                  <SelectItem value="tx">Texas</SelectItem>
-                                  <SelectItem value="fl">Florida</SelectItem>
-                                  <SelectItem value="il">Illinois</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Street address" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Your exact address will only be shared with confirmed subletters.
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="space-y-4">
-                      <h2 className="text-xl font-semibold">Availability</h2>
-                      <div className="space-y-2">
-                        <div className="flex flex-col space-y-2">
-                          <label className="text-sm font-medium">Available Dates</label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full justify-start text-left font-normal",
-                                  !date && "text-muted-foreground",
-                                )}
-                              >
-                                <Calendar className="mr-2 h-4 w-4" />
-                                {date?.from ? (
-                                  date.to ? (
-                                    <>
-                                      {date.from.toLocaleDateString()} - {date.to.toLocaleDateString()}
-                                    </>
-                                  ) : (
-                                    date.from.toLocaleDateString()
-                                  )
-                                ) : (
-                                  <span>Select date range</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <CalendarComponent
-                                initialFocus
-                                mode="range"
-                                defaultMonth={date?.from}
-                                selected={date}
-                                onSelect={(newDate: any) => setDate(newDate)}
-                                numberOfMonths={2}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h2 className="text-xl font-semibold">Property Details</h2>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <FormField
-                          control={form.control}
-                          name="propertyType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Property Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="apartment">Apartment</SelectItem>
-                                  <SelectItem value="house">House</SelectItem>
-                                  <SelectItem value="condo">Condo</SelectItem>
-                                  <SelectItem value="studio">Studio</SelectItem>
-                                  <SelectItem value="room">Private Room</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="bedrooms"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bedrooms</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="studio">Studio</SelectItem>
-                                  <SelectItem value="1">1</SelectItem>
-                                  <SelectItem value="2">2</SelectItem>
-                                  <SelectItem value="3">3</SelectItem>
-                                  <SelectItem value="4">4+</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="bathrooms"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bathrooms</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="1">1</SelectItem>
-                                  <SelectItem value="1.5">1.5</SelectItem>
-                                  <SelectItem value="2">2</SelectItem>
-                                  <SelectItem value="2.5">2.5</SelectItem>
-                                  <SelectItem value="3">3+</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h2 className="text-xl font-semibold">Photos</h2>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="col-span-2">
-                          <div className="flex items-center justify-center w-full">
-                            <label
-                              htmlFor="dropzone-file"
-                              className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted/40 hover:bg-muted"
-                            >
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <ImagePlus className="w-10 h-10 mb-3 text-muted-foreground" />
-                                <p className="mb-2 text-sm text-muted-foreground">
-                                  <span className="font-semibold">Click to upload</span> or drag and drop
-                                </p>
-                                <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (MAX. 5MB per image)</p>
-                              </div>
-                              <input id="dropzone-file" type="file" className="hidden" multiple />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline">
-                  Save as Draft
+                <div className="space-y-2">
+                  <label htmlFor="description" className="text-sm font-medium">
+                    Description
+                  </label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="Describe your property, including amenities, nearby attractions, and any special features..."
+                    className="min-h-[120px]"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="address" className="text-sm font-medium">
+                      Address
+                    </label>
+                    <Input
+                      id="address"
+                      name="address"
+                      placeholder="e.g., 123 Main St"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="city" className="text-sm font-medium">
+                      City
+                    </label>
+                    <Input
+                      id="city"
+                      name="city"
+                      placeholder="e.g., New York"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="state" className="text-sm font-medium">
+                      State
+                    </label>
+                    <Select value={state} onValueChange={setState} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATES.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="propertyType"
+                      className="text-sm font-medium"
+                    >
+                      Property Type
+                    </label>
+                    <Select
+                      value={propertyType}
+                      onValueChange={setPropertyType}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROPERTY_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="bedrooms" className="text-sm font-medium">
+                      Bedrooms
+                    </label>
+                    <div className="relative">
+                      <Bed className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="bedrooms"
+                        name="bedrooms"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="e.g., 2"
+                        className="pl-8"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="bathrooms" className="text-sm font-medium">
+                      Bathrooms
+                    </label>
+                    <div className="relative">
+                      <Bath className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="bathrooms"
+                        name="bathrooms"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        placeholder="e.g., 1.5"
+                        className="pl-8"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Available Dates</label>
+                  <DateRangePicker date={date} onDateChange={setDate} />
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Photos</label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Add photos of your property. You can upload up to 10
+                      photos.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative aspect-square group">
+                        <Image
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          fill
+                          className="object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {imagePreviews.length < 10 && (
+                      <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                        <ImagePlus className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Add Photo
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Creating..." : "Create Listing"}
                 </Button>
-                <Button type="submit">
-                  Publish Listing
-                  <Upload className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </form>
-          </Form>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </main>
-      <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-          <div className="flex items-center gap-2 text-sm">
-            <Building className="h-5 w-5 text-primary" />
-            <p className="font-medium">SubletMatch</p>
-          </div>
-          <p className="text-center text-sm text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} SubletMatch. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
-  )
+  );
 }

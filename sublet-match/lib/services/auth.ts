@@ -19,7 +19,7 @@ export const authService = {
       const data = await response.json();
       // Store the token in localStorage
       localStorage.setItem("token", data.access_token);
-      return { success: true };
+      return { success: true, token: data.access_token };
     } catch (error) {
       return { success: false, error: "Network error occurred" };
     }
@@ -47,14 +47,17 @@ export const authService = {
       const data = await response.json();
       // Store the token in localStorage
       localStorage.setItem("token", data.access_token);
-      return { success: true };
+      return { success: true, token: data.access_token };
     } catch (error) {
       return { success: false, error: "Network error occurred" };
     }
   },
 
   getToken(): string | null {
-    return localStorage.getItem("token");
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("token");
+    }
+    return null;
   },
 
   isAuthenticated(): boolean {
@@ -62,6 +65,8 @@ export const authService = {
   },
 
   logout(): void {
-    localStorage.removeItem("token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
   },
 };

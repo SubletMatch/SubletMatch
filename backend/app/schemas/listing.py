@@ -1,24 +1,58 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
+from enum import Enum
 from ..models.listing import PropertyType
+
+class PropertyType(str, Enum):
+    APARTMENT = "Apartment"
+    HOUSE = "House"
+    CONDO = "Condo"
+    TOWNHOUSE = "Townhouse"
+    STUDIO = "Studio"
+    LOFT = "Loft"
+    DUPLEX = "Duplex"
+    ROOM = "Room"
 
 class ListingBase(BaseModel):
     title: str
     description: str
-    price: float = Field(..., gt=0)
+    price: float = Field(gt=0)
     address: str
     city: str
     state: str
-    property_type: str
-    bedrooms: int = Field(..., gt=0)
-    bathrooms: float = Field(..., gt=0)
-    available_from: str
-    available_to: str
+    property_type: PropertyType
+    bedrooms: int = Field(gt=0)
+    bathrooms: float = Field(gt=0)
+    available_from: datetime
+    available_to: datetime
 
 class ListingCreate(ListingBase):
     pass
+
+class ListingImageBase(BaseModel):
+    image_url: str
+
+class ListingImageCreate(ListingImageBase):
+    pass
+
+class ListingImage(ListingImageBase):
+    id: UUID
+    listing_id: UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class Listing(ListingBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    images: List[ListingImage] = []
+
+    class Config:
+        from_attributes = True
 
 class ListingUpdate(ListingBase):
     title: Optional[str] = None
@@ -27,11 +61,11 @@ class ListingUpdate(ListingBase):
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
-    property_type: Optional[str] = None
+    property_type: Optional[PropertyType] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[float] = None
-    available_from: Optional[str] = None
-    available_to: Optional[str] = None
+    available_from: Optional[datetime] = None
+    available_to: Optional[datetime] = None
     status: Optional[str] = None
 
 class ListingInDB(ListingBase):

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import auth
+from .routes import auth, listings
 from .database import engine, Base
 
 # Create database tables
@@ -19,6 +19,11 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to SubletMatch API"}
 
 # 👇 ADD THIS to enable running with `uvicorn app.main:app`
 if __name__ == "__main__":
