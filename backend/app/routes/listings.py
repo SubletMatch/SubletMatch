@@ -197,7 +197,46 @@ async def update_listing(
     
     db.commit()
     db.refresh(db_listing)
-    return db_listing
+
+    # Get the listing images
+    images = db.query(ListingImage).filter(ListingImage.listing_id == listing_id).all()
+    
+    # Get the user data
+    user = db.query(User).filter(User.id == db_listing.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Convert to response model with full image URLs
+    response_data = {
+        "id": db_listing.id,
+        "title": db_listing.title,
+        "description": db_listing.description,
+        "price": db_listing.price,
+        "address": db_listing.address,
+        "city": db_listing.city,
+        "state": db_listing.state,
+        "property_type": db_listing.property_type,
+        "bedrooms": db_listing.bedrooms,
+        "bathrooms": db_listing.bathrooms,
+        "available_from": db_listing.available_from,
+        "available_to": db_listing.available_to,
+        "user_id": db_listing.user_id,
+        "created_at": db_listing.created_at,
+        "host": db_listing.host,
+        "amenities": db_listing.amenities,
+        "images": [{
+            "id": image.id,
+            "listing_id": image.listing_id,
+            "created_at": image.created_at,
+            "image_url": f"/uploads/{image.image_url}"
+        } for image in images],
+        "user": {
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email
+        }
+    }
+    return ListingResponse(**response_data)
 
 @router.delete("/{listing_id}")
 async def delete_listing(

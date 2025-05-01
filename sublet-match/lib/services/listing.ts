@@ -76,7 +76,8 @@ export class ListingService {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      throw new Error("Failed to update listing");
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to update listing");
     }
     return response.json();
   }

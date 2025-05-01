@@ -10,8 +10,10 @@ export default async function EditListingPage({
 }: {
   params: PageParams;
 }) {
+  const listingId = params.id;
+
   try {
-    const listing = await listingService.getListing(params.id);
+    const listing = await listingService.getListing(listingId);
     return (
       <div className="container py-8">
         <h1 className="text-3xl font-bold mb-8">Edit Listing</h1>
