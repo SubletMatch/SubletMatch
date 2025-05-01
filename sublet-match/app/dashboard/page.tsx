@@ -326,7 +326,9 @@ export default function DashboardPage() {
                         </p>
                       </CardContent>
                       <CardFooter className="p-4 pt-2 flex justify-end">
-                        <Button size="sm">Reply</Button>
+                        <Link href={`/messages?page=1&messageId=${message.id}`}>
+                          <Button size="sm">Reply</Button>
+                        </Link>
                       </CardFooter>
                     </Card>
                   ))}
