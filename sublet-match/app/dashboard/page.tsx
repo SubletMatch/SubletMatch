@@ -12,6 +12,7 @@ import {
   Plus,
   Settings,
   User,
+  Search,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -164,6 +165,14 @@ export default function DashboardPage() {
               <Button
                 variant="ghost"
                 className="justify-start"
+                onClick={() => setActiveTab("find")}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Find Listings
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start"
                 onClick={() => setActiveTab("messages")}
               >
                 <Inbox className="mr-2 h-4 w-4" />
@@ -195,6 +204,9 @@ export default function DashboardPage() {
                   <TabsTrigger value="listings" className="relative">
                     My Listings
                   </TabsTrigger>
+                  <TabsTrigger value="find" className="relative">
+                    Find Listings
+                  </TabsTrigger>
                   <TabsTrigger value="messages" className="relative">
                     Messages
                     <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
@@ -212,6 +224,20 @@ export default function DashboardPage() {
                   </Link>
                 )}
               </div>
+
+              <TabsContent value="find" className="space-y-6">
+                <div className="text-center text-muted-foreground">
+                  <p className="text-lg mb-4">
+                    Find available listings to sublease
+                  </p>
+                  <Link href="/find">
+                    <Button>
+                      <Search className="mr-2 h-4 w-4" />
+                      Browse Listings
+                    </Button>
+                  </Link>
+                </div>
+              </TabsContent>
 
               <TabsContent value="listings" className="space-y-6">
                 {isLoading ? (

@@ -67,8 +67,56 @@ async def get_listings(
     skip: int = 0,
     limit: int = 10
 ):
-    listings = db.query(Listing).offset(skip).limit(limit).all()
-    return listings
+    try:
+        # Get all listings with their images and user data
+        listings = db.query(Listing).offset(skip).limit(limit).all()
+        
+        # Convert to response model with full image URLs
+        response_listings = []
+        for listing in listings:
+            # Get the listing images
+            images = db.query(ListingImage).filter(ListingImage.listing_id == listing.id).all()
+            
+            # Get the user data
+            user = db.query(User).filter(User.id == listing.user_id).first()
+            if not user:
+                continue  # Skip listings without a valid user
+            
+            # Convert to response model
+            response_data = {
+                "id": listing.id,
+                "title": listing.title,
+                "description": listing.description,
+                "price": listing.price,
+                "address": listing.address,
+                "city": listing.city,
+                "state": listing.state,
+                "property_type": listing.property_type,
+                "bedrooms": listing.bedrooms,
+                "bathrooms": listing.bathrooms,
+                "available_from": listing.available_from,
+                "available_to": listing.available_to,
+                "user_id": listing.user_id,
+                "created_at": listing.created_at,
+                "host": listing.host,
+                "images": [{
+                    "id": image.id,
+                    "listing_id": image.listing_id,
+                    "created_at": image.created_at,
+                    "image_url": f"/uploads/{image.image_url}"
+                } for image in images],
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email
+                }
+            }
+            response_listings.append(ListingResponse(**response_data))
+        
+        return response_listings
+    except Exception as e:
+        logger.error(f"Error fetching listings: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{listing_id}", response_model=ListingResponse)
 async def get_listing(

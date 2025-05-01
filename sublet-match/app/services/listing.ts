@@ -173,6 +173,33 @@ class ListingService {
       },
     });
   }
+
+  async getAllListings() {
+    try {
+      const token = authService.getToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/api/v1/listings`, {
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch listings");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      throw error;
+    }
+  }
 }
 
 export const listingService = new ListingService();
