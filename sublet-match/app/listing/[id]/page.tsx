@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/lib/services/auth";
 import { useRouter } from "next/navigation";
+import { Map } from "../../components/map";
 
 interface Listing {
   id: string;
@@ -45,6 +46,7 @@ interface Listing {
     name: string;
     email: string;
   };
+  amenities?: string;
 }
 
 interface PageParams {
@@ -285,18 +287,29 @@ export default function ListingPage({
                   <p className="text-muted-foreground">{listing.description}</p>
                 </TabsContent>
                 <TabsContent value="amenities" className="mt-4">
-                  <ul className="grid grid-cols-2 gap-2">
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      {listing.property_type}
-                    </li>
-                  </ul>
+                  <div className="mt-8">
+                    <h2 className="text-2xl font-bold mb-4">Amenities</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {listing?.amenities?.split(" ").map((amenity, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-1 bg-muted rounded-full text-sm"
+                        >
+                          {amenity}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </TabsContent>
                 <TabsContent value="location" className="mt-4">
-                  <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                    <p className="text-muted-foreground">
-                      Map would be displayed here
-                    </p>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span>
+                        {listing.address}, {listing.city}, {listing.state}
+                      </span>
+                    </div>
+                    <Map city={listing.city} state={listing.state} />
                   </div>
                 </TabsContent>
               </Tabs>

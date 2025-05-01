@@ -99,6 +99,7 @@ async def get_listings(
                 "user_id": listing.user_id,
                 "created_at": listing.created_at,
                 "host": listing.host,
+                "amenities": listing.amenities,
                 "images": [{
                     "id": image.id,
                     "listing_id": image.listing_id,
@@ -153,6 +154,7 @@ async def get_listing(
             "user_id": listing.user_id,
             "created_at": listing.created_at,
             "host": listing.host,
+            "amenities": listing.amenities,
             "images": [{
                 "id": image.id,
                 "listing_id": image.listing_id,

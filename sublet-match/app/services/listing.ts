@@ -11,26 +11,18 @@ export interface ListingImage {
 }
 
 export interface Listing {
-  id: string;
+  id: number;
   title: string;
   description: string;
   price: number;
-  address: string;
-  city: string;
-  state: string;
-  property_type: string;
   bedrooms: number;
   bathrooms: number;
+  city: string;
+  state: string;
   available_from: string;
   available_to: string;
-  created_at: string;
-  user_id: string;
-  host: string;
-  images: ListingImage[];
-  user: {
-    name: string;
-    email: string;
-  };
+  images: { id: number; image_url: string }[];
+  amenities?: string;
 }
 
 export interface CreateListingData {

@@ -123,6 +123,7 @@ export default function ListPage() {
     bedrooms: "",
     bathrooms: "",
   });
+  const [amenities, setAmenities] = useState("");
 
   useEffect(() => {
     // Check if user is authenticated
@@ -187,6 +188,7 @@ export default function ListPage() {
         available_from: new Date(date.from).toISOString(),
         available_to: new Date(date.to).toISOString(),
         host: "Active", // Default host status
+        amenities: amenities,
       };
 
       const response = await fetch(
@@ -443,6 +445,21 @@ export default function ListPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Available Dates</label>
                   <DateRangePicker date={date} onDateChange={setDate} />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Amenities</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter amenities separated by spaces (e.g. wifi parking pool gym laundry)"
+                    value={amenities}
+                    onChange={(e) => setAmenities(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Separate each amenity with a space. Common amenities
+                    include: wifi, parking, pool, gym, laundry, air
+                    conditioning, dishwasher, etc.
+                  </p>
                 </div>
 
                 <div className="space-y-4">
