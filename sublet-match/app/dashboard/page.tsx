@@ -12,8 +12,16 @@ import {
   Plus,
   Settings,
   User,
+  Search,
+  MapPin,
+  DollarSign,
+  Bed,
+  Bath,
+  Calendar,
+  Pencil,
 } from "lucide-react";
 import Image from "next/image";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { userService } from "@/app/services/user";
 import { authService } from "@/lib/services/auth";
-import { listingService } from "@/app/services/listing";
+import { listingService } from "@/lib/services/listing";
 import { useRouter } from "next/navigation";
 
 // Mock data for messages
@@ -64,12 +72,28 @@ const mockMessages = [
   },
 ];
 
+interface Listing {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  address: string;
+  city: string;
+  state: string;
+  property_type: string;
+  bedrooms: number;
+  bathrooms: number;
+  available_from: string;
+  available_to: string;
+  images: { image_url: string }[];
+}
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("listings");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState("");
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -121,6 +145,24 @@ export default function DashboardPage() {
     router.push("/signin");
   };
 
+  if (isLoading) {
+    return (
+      <div className="container py-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-8">
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -164,6 +206,14 @@ export default function DashboardPage() {
               <Button
                 variant="ghost"
                 className="justify-start"
+                onClick={() => setActiveTab("find")}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Find Listings
+              </Button>
+              <Button
+                variant="ghost"
+                className="justify-start"
                 onClick={() => setActiveTab("messages")}
               >
                 <Inbox className="mr-2 h-4 w-4" />
@@ -195,6 +245,9 @@ export default function DashboardPage() {
                   <TabsTrigger value="listings" className="relative">
                     My Listings
                   </TabsTrigger>
+                  <TabsTrigger value="find" className="relative">
+                    Find Listings
+                  </TabsTrigger>
                   <TabsTrigger value="messages" className="relative">
                     Messages
                     <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
@@ -207,80 +260,124 @@ export default function DashboardPage() {
                   <Link href="/list">
                     <Button size="sm">
                       <Plus className="mr-2 h-4 w-4" />
-                      New Listing
+                      Add New Listing
                     </Button>
                   </Link>
                 )}
               </div>
 
+              <TabsContent value="find" className="space-y-6">
+                <div className="text-center text-muted-foreground">
+                  <p className="text-lg mb-4">
+                    Find available listings to sublease
+                  </p>
+                  <Link href="/find">
+                    <Button>
+                      <Search className="mr-2 h-4 w-4" />
+                      Browse Listings
+                    </Button>
+                  </Link>
+                </div>
+              </TabsContent>
+
               <TabsContent value="listings" className="space-y-6">
-                {isLoading ? (
-                  <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  </div>
-                ) : error ? (
-                  <div className="text-center text-red-500">{error}</div>
-                ) : listings.length === 0 ? (
-                  <div className="text-center text-muted-foreground">
-                    You don't have any listings yet. Create your first listing!
+                {listings.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-4">
+                      You haven't created any listings yet.
+                    </p>
+                    <Button onClick={() => router.push("/list")}>
+                      Add Your First Listing
+                    </Button>
                   </div>
                 ) : (
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {listings.map((listing) => (
-                      <Card key={listing.id}>
-                        <div className="relative h-48 w-full">
-                          <Image
-                            src={
-                              listing.images && listing.images.length > 0
-                                ? `data:image/jpeg;base64,${listing.images[0].image_data}`
-                                : "/placeholder.jpg"
-                            }
-                            alt={listing.title}
-                            fill
-                            className="object-cover rounded-t-lg"
-                          />
-                        </div>
-                        <CardHeader className="p-4 pb-2">
+                      <Card key={listing.id} className="w-full">
+                        <CardContent className="p-6">
                           <div className="flex justify-between items-start">
                             <div>
-                              <CardTitle className="text-lg">
+                              <h3 className="text-lg font-semibold">
                                 {listing.title}
-                              </CardTitle>
-                              <CardDescription>
-                                {listing.city}, {listing.state}
-                              </CardDescription>
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {listing.address}, {listing.city},{" "}
+                                {listing.state}
+                              </p>
                             </div>
-                            <div className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                              {listing.host || "Active"}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2"
+                                onClick={() => {
+                                  console.log(
+                                    "Edit clicked for listing:",
+                                    listing.id
+                                  );
+                                  router.push(`/listing/${listing.id}/edit`);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  console.log(
+                                    "View clicked for listing:",
+                                    listing.id
+                                  );
+                                  router.push(`/listing/${listing.id}`);
+                                }}
+                              >
+                                View
+                              </Button>
                             </div>
                           </div>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0 pb-2">
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(
-                              listing.available_from
-                            ).toLocaleDateString()}{" "}
-                            -{" "}
-                            {new Date(
-                              listing.available_to
-                            ).toLocaleDateString()}
-                          </div>
-                          <div className="font-medium mt-1">
-                            ${listing.price}/month
+                          {listing.images && listing.images.length > 0 && (
+                            <div className="relative h-48 mt-4">
+                              <img
+                                src={listing.images[0].image_url}
+                                alt={listing.title}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-2 mt-4">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4" />
+                              <span>${listing.price}/month</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4" />
+                              <span>{listing.property_type}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Bed className="h-4 w-4" />
+                              <span>{listing.bedrooms} beds</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Bath className="h-4 w-4" />
+                              <span>{listing.bathrooms} baths</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {format(
+                                  new Date(listing.available_from),
+                                  "MMM d, yyyy"
+                                )}{" "}
+                                -{" "}
+                                {format(
+                                  new Date(listing.available_to),
+                                  "MMM d, yyyy"
+                                )}
+                              </span>
+                            </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="p-4 pt-2 flex justify-between">
-                          <Button variant="outline" size="sm">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/listing/${listing.id}`}>
-                              View
-                              <ChevronRight className="ml-1 h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </CardFooter>
                       </Card>
                     ))}
                   </div>

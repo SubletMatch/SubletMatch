@@ -28,6 +28,7 @@ class ListingBase(BaseModel):
     available_from: datetime
     available_to: datetime
     host: Optional[str] = None
+    amenities: Optional[str] = None
 
 class ListingCreate(ListingBase):
     pass
@@ -68,6 +69,7 @@ class ListingUpdate(ListingBase):
     available_from: Optional[datetime] = None
     available_to: Optional[datetime] = None
     host: Optional[str] = None
+    amenities: Optional[str] = None
 
 class ListingInDB(ListingBase):
     id: UUID
