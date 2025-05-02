@@ -1,3 +1,5 @@
+import { userService } from "@/app/services/user";
+
 export interface Message {
   id: string;
   content: string;
@@ -70,12 +72,18 @@ export const messagesService = {
   async getConversations() {
     try {
       const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        throw new Error("No user ID found in localStorage");
+      if (!token) {
+        throw new Error("No authentication token found");
       }
+
+      // Get current user's ID from user service
+      const currentUser = await userService.getCurrentUser(token);
+      if (!currentUser?.id) {
+        throw new Error("Could not get current user information");
+      }
+
       const response = await fetch(
-        `${API_BASE_URL}/messages/conversations/${userId}`,
+        `${API_BASE_URL}/messages/conversations/${currentUser.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -100,14 +108,20 @@ export const messagesService = {
   async getMessages(conversationId: string) {
     try {
       const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        throw new Error("No user ID found in localStorage");
+      if (!token) {
+        throw new Error("No authentication token found");
       }
+
+      // Get current user's ID from user service
+      const currentUser = await userService.getCurrentUser(token);
+      if (!currentUser?.id) {
+        throw new Error("Could not get current user information");
+      }
+
       const [listingId, otherUserId] = conversationId.split("_");
 
       const response = await fetch(
-        `${API_BASE_URL}/messages/conversation/${listingId}/${userId}/${otherUserId}`,
+        `${API_BASE_URL}/messages/conversation/${listingId}/${currentUser.id}/${otherUserId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

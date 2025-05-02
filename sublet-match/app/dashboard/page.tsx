@@ -39,39 +39,8 @@ import { userService } from "@/app/services/user";
 import { authService } from "@/lib/services/auth";
 import { listingService } from "@/lib/services/listing";
 import { useRouter } from "next/navigation";
-
-// Mock data for messages
-const mockMessages = [
-  {
-    id: 1,
-    from: "Sarah Johnson",
-    avatar: "/placeholder.svg?height=40&width=40&text=SJ",
-    message:
-      "Hi, I'm interested in your apartment in New York. Is it still available for the dates listed?",
-    date: "2 hours ago",
-    listing: "Spacious 1BR in Downtown",
-    unread: true,
-  },
-  {
-    id: 2,
-    from: "Michael Chen",
-    avatar: "/placeholder.svg?height=40&width=40&text=MC",
-    message:
-      "Hello, I was wondering if the price is negotiable for a longer stay?",
-    date: "Yesterday",
-    listing: "Spacious 1BR in Downtown",
-    unread: false,
-  },
-  {
-    id: 3,
-    from: "Emma Wilson",
-    avatar: "/placeholder.svg?height=40&width=40&text=EW",
-    message: "Is parking included with the apartment?",
-    date: "3 days ago",
-    listing: "Spacious 1BR in Downtown",
-    unread: false,
-  },
-];
+import { messagesService } from "@/lib/services/messages";
+import { Conversation } from "@/lib/services/messages";
 
 interface Listing {
   id: string;
@@ -95,6 +64,7 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState("");
   const [listings, setListings] = useState<Listing[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -147,6 +117,28 @@ export default function DashboardPage() {
 
     if (activeTab === "listings") {
       fetchListings();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const result = await messagesService.getConversations();
+        if (result.success && "data" in result) {
+          setConversations(result.data as Conversation[]);
+        } else {
+          setError(result.error || "Failed to fetch conversations");
+        }
+      } catch (error: any) {
+        console.error("Error fetching conversations:", error);
+        setError(error.message || "Failed to fetch conversations");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (activeTab === "messages") {
+      fetchConversations();
     }
   }, [activeTab]);
 
@@ -395,51 +387,76 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="messages" className="space-y-6">
-                <div className="space-y-4">
-                  {mockMessages.map((message) => (
-                    <Card
-                      key={message.id}
-                      className={
-                        message.unread ? "border-primary/50 shadow-sm" : ""
-                      }
-                    >
-                      <CardHeader className="p-4 pb-2">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full overflow-hidden">
-                              <img
-                                src={message.avatar || "/placeholder.svg"}
-                                alt={message.from}
-                                className="h-full w-full object-cover"
-                              />
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  </div>
+                ) : error ? (
+                  <div className="text-center text-red-500">{error}</div>
+                ) : conversations.length === 0 ? (
+                  <div className="text-center text-muted-foreground">
+                    No messages yet. Start a conversation by messaging a listing
+                    owner!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {conversations.map((conversation) => {
+                      const otherParticipant = conversation.participants.find(
+                        (p) => p.id !== localStorage.getItem("userId")
+                      );
+
+                      if (!otherParticipant) return null;
+
+                      return (
+                        <Card
+                          key={conversation.id}
+                          className={
+                            conversation.unreadCount > 0
+                              ? "border-primary/50 shadow-sm"
+                              : ""
+                          }
+                        >
+                          <CardHeader className="p-4 pb-2">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <span className="text-primary font-medium">
+                                    {otherParticipant.username[0].toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <CardTitle className="text-base">
+                                    {otherParticipant.username}
+                                  </CardTitle>
+                                  <CardDescription>
+                                    Re: Listing {conversation.listing_id}
+                                  </CardDescription>
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(
+                                  conversation.lastMessage.timestamp
+                                ).toLocaleDateString()}
+                              </div>
                             </div>
-                            <div>
-                              <CardTitle className="text-base">
-                                {message.from}
-                              </CardTitle>
-                              <CardDescription>
-                                Re: {message.listing}
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {message.date}
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-2 pb-2">
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {message.message}
-                        </p>
-                      </CardContent>
-                      <CardFooter className="p-4 pt-2 flex justify-end">
-                        <Link href={`/messages?page=1&messageId=${message.id}`}>
-                          <Button size="sm">Reply</Button>
-                        </Link>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-2 pb-2">
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {conversation.lastMessage.content}
+                            </p>
+                          </CardContent>
+                          <CardFooter className="p-4 pt-2 flex justify-end">
+                            <Link
+                              href={`/messages?conversation=${conversation.id}`}
+                            >
+                              <Button size="sm">View Conversation</Button>
+                            </Link>
+                          </CardFooter>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="settings" className="space-y-6">

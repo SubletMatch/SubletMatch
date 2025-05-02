@@ -8,8 +8,9 @@ import logging
 import json
 
 from ..models.message import Message
-from ..schemas.message import MessageOut, MessageCreate
+from ..schemas.message import MessageOut, MessageCreate, ConversationOut
 from ..database import get_db
+from ..models.user import User
 
 router = APIRouter(tags=["Messages"])
 logger = logging.getLogger(__name__)
@@ -64,26 +65,77 @@ def create_message(message: MessageCreate, db: Session = Depends(get_db)):
             detail="Error creating message"
         )
 
-@router.get("/conversations/{user_id}", response_model=List[MessageOut])
+@router.get("/conversations/{user_id}", response_model=List[ConversationOut])
 def get_conversations(user_id: UUID, db: Session = Depends(get_db)):
     """
     Get all conversations for a user, grouped by listing and other participant
     """
-    # Get unique combinations of listing_id and other participant
-    conversations = db.query(
-        Message.listing_id,
-        Message.sender_id,
-        Message.receiver_id,
-        Message.content,
-        Message.timestamp
-    ).filter(
-        or_(
-            Message.sender_id == user_id,
-            Message.receiver_id == user_id
+    try:
+        logger.info(f"Fetching conversations for user {user_id}")
+        
+        # Get all messages for the user
+        messages = db.query(Message).filter(
+            or_(
+                Message.sender_id == user_id,
+                Message.receiver_id == user_id
+            )
+        ).order_by(Message.timestamp.desc()).all()
+        
+        logger.info(f"Found {len(messages)} messages")
+        
+        # Group messages by listing_id and other participant
+        conversations = {}
+        for msg in messages:
+            other_user_id = str(msg.receiver_id) if str(msg.sender_id) == str(user_id) else str(msg.sender_id)
+            key = f"{msg.listing_id}_{other_user_id}"
+            
+            if key not in conversations:
+                # Get the other user's information
+                other_user = db.query(User).filter(User.id == other_user_id).first()
+                if not other_user:
+                    logger.warning(f"Could not find user {other_user_id}")
+                    continue
+                    
+                # Create the conversation object with proper string IDs
+                conversation_data = {
+                    "id": key,
+                    "listing_id": str(msg.listing_id),
+                    "participants": [
+                        {"id": str(user_id), "username": "Current User"},  # We'll update this with actual username later
+                        {"id": other_user_id, "username": other_user.name or other_user.email}
+                    ],
+                    "lastMessage": {
+                        "id": str(msg.id),
+                        "content": msg.content,
+                        "sender_id": str(msg.sender_id),
+                        "receiver_id": str(msg.receiver_id),
+                        "listing_id": str(msg.listing_id),
+                        "timestamp": msg.timestamp
+                    },
+                    "unreadCount": 0  # We'll implement this later
+                }
+                
+                logger.info(f"Created conversation data: {json.dumps(conversation_data, default=str)}")
+                conversations[key] = conversation_data
+        
+        # Convert to ConversationOut models using from_dict
+        conversation_list = []
+        for conv in conversations.values():
+            try:
+                conversation_list.append(ConversationOut.from_dict(conv))
+            except Exception as e:
+                logger.error(f"Error converting conversation: {str(e)}")
+                logger.error(f"Conversation data: {json.dumps(conv, default=str)}")
+                continue
+        
+        logger.info(f"Returning {len(conversation_list)} conversations")
+        return conversation_list
+    except Exception as e:
+        logger.error(f"Error fetching conversations: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching conversations"
         )
-    ).order_by(Message.timestamp.desc()).all()
-    
-    return conversations
 
 @router.get("/conversation/{listing_id}/{user1_id}/{user2_id}", response_model=List[MessageOut])
 def get_conversation(
