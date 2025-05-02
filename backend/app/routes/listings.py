@@ -2,11 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+import os
+from ..schemas.listing import ListingImage as ListingImageSchema
+import shutil
 import uuid
 import logging
-import os
-import shutil
-from ..database import get_db
+import mimetypes
+import boto3
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+from ..core.database import get_db
 from ..models.listing import Listing, ListingImage
 from ..models.user import User
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse, Listing as ListingSchema, ListingImage as ListingImageSchema
@@ -16,10 +20,6 @@ from ..auth.utils import get_current_user as auth_get_current_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-UPLOAD_DIR = "uploads/listings"
-
-# Create upload directory if it doesn't exist
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("/my", response_model=List[ListingSchema])
 async def get_my_listings(
@@ -170,9 +170,12 @@ async def delete_listing(
     # Delete associated images
     images = db.query(ListingImage).filter(ListingImage.listing_id == listing_id).all()
     for image in images:
-        # Delete the image file
-        if os.path.exists(image.image_url):
-            os.remove(image.image_url)
+        try:
+            # Extract filename from S3 URL
+            image_path = image.image_url.split('/')[-1]
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=image_path)
+        except Exception as e:
+            logger.error(f"Error deleting S3 object: {str(e)}")
         db.delete(image)
     
     db.delete(db_listing)
@@ -197,43 +200,72 @@ async def upload_listing_images(
             raise HTTPException(status_code=404, detail="Listing not found")
 
         uploaded_images = []
+        # S3 Configuration
+        S3_BUCKET = "sublet-match-images"  # Replace with your actual bucket name
+
+        # Initialize S3 client
+        region = os.getenv("AWS_DEFAULT_REGION")
+        s3_client = boto3.client("s3", region_name=region) 
         for image in images:
             # Generate unique filename
-            filename = f"{uuid.uuid4()}_{image.filename}"
-            relative_path = f"listings/{filename}"
-            file_path = os.path.join(UPLOAD_DIR, filename)
+            file_extension = image.filename.split('.')[-1].lower()
+            if file_extension not in ['jpg', 'jpeg', 'png', 'gif']:
+                raise HTTPException(status_code=400, detail="Invalid image format")
             
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            # Generate unique filename
+            filename = f"{uuid.uuid4()}.{file_extension}"
             
-            # Save the file
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(image.file, buffer)
-            
-            # Create database record with relative path
-            db_image = ListingImage(
-                image_url=relative_path,
-                listing_id=listing_id
-            )
-            db.add(db_image)
-            uploaded_images.append(db_image)
+            # Upload to S3
+            try:
+                
+                # Force correct MIME type using known extensions
+                file_extension = image.filename.split('.')[-1].lower()
+                if file_extension in ['jpg', 'jpeg']:
+                    content_type = 'image/jpeg'
+                elif file_extension == 'png':
+                    content_type = 'image/png'
+                elif file_extension == 'gif':
+                    content_type = 'image/gif'
+                else:
+                    raise HTTPException(status_code=400, detail="Unsupported image type")
 
-        db.commit()
-        for image in uploaded_images:
-            db.refresh(image)
+                # Upload to S3 with explicit Content-Type
+                s3_client.upload_fileobj(
+                    image.file,
+                    S3_BUCKET,
+                    filename,
+                    ExtraArgs={
+                        'ContentType': content_type,
+                        'Metadata': {
+                            'Cache-Control': 'public,max-age=31536000'
+                        }
+                    }
+                )
 
-        # Convert to response with full URLs
-        response_images = []
-        for image in uploaded_images:
-            response_images.append({
-                "id": image.id,
-                "listing_id": image.listing_id,
-                "created_at": image.created_at,
-                "image_url": f"/uploads/{image.image_url}"
-            })
 
-        return response_images
+
+                # Create ListingImage record
+                image_url = f"https://{S3_BUCKET}.s3.{region}.amazonaws.com/{filename}"
+                db_image = ListingImage(
+                    listing_id=listing_id,
+                    image_url=image_url
+                )
+                db.add(db_image)
+                db.commit()
+                db.refresh(db_image)
+                uploaded_images.append(db_image)
+                
+            except NoCredentialsError:
+                raise HTTPException(status_code=500, detail="AWS credentials not configured")
+            except PartialCredentialsError:
+                raise HTTPException(status_code=500, detail="Incomplete AWS credentials")
+            except Exception as e:
+                logger.error(f"Error uploading image to S3: {str(e)}")
+                raise HTTPException(status_code=500, detail="Failed to upload image")
+        
+        return [ListingImageSchema.model_validate(img) for img in uploaded_images]
     except Exception as e:
-        logger.error(f"Error uploading images: {str(e)}")
+        logger.error(f"Error uploading listing images: {str(e)}")
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(e)) 
+        raise HTTPException(status_code=400, detail=str(e))
+

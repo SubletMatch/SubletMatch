@@ -150,9 +150,11 @@ export default function ListPage() {
       newImages.forEach((file) => {
         const reader = new FileReader();
         reader.onloadend = () => {
-          setImagePreviews((prev) => [...prev, reader.result as string]);
+          if (reader.result) {
+            setImagePreviews((prev) => [...prev, reader.result as string]);
+          }
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file); // <- this works for all types, even jpeg
       });
     }
   };
@@ -188,6 +190,8 @@ export default function ListPage() {
         available_to: new Date(date.to).toISOString(),
         host: "Active", // Default host status
       };
+      console.log("listingData", listingData)
+
 
       const response = await fetch(
         "http://localhost:8000/api/v1/listings/create",
@@ -203,7 +207,7 @@ export default function ListPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to create listing");
+        throw new Error(JSON.stringify(errorData));
       }
 
       const listing = await response.json();
@@ -231,7 +235,8 @@ export default function ListPage() {
 
         if (!imageResponse.ok) {
           const errorData = await imageResponse.json();
-          throw new Error(errorData.detail || "Failed to upload images");
+          console.error("Listing create error response:", errorData);
+          throw new Error(JSON.stringify(errorData)); 
         }
 
         const uploadedImages = await imageResponse.json();
@@ -457,12 +462,8 @@ export default function ListPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {imagePreviews.map((preview, index) => (
                       <div key={index} className="relative aspect-square group">
-                        <Image
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
+                        <img src={preview} alt={`Preview ${index + 1}`} className="object-cover rounded-lg w-full h-full" />
+
                         <button
                           type="button"
                           onClick={() => removeImage(index)}

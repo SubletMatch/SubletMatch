@@ -6,6 +6,7 @@ import os
 from app.routes import auth, listings, users
 from app.core.config import settings
 
+
 app = FastAPI(title=settings.PROJECT_NAME)
 
 # Configure CORS
