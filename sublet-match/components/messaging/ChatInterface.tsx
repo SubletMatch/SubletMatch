@@ -33,6 +33,42 @@ export function ChatInterface({
     }
   };
 
+  if (messages.length === 0) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="border-b p-4">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src={`/avatars/${otherUser.id}.png`} />
+              <AvatarFallback>
+                {otherUser.username[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium">{otherUser.username}</h3>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          No messages yet. Start the conversation!
+        </div>
+        <form onSubmit={handleSubmit} className="border-t p-4">
+          <div className="flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1"
+            />
+            <Button type="submit" size="icon">
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="border-b p-4">

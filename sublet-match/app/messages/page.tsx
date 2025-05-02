@@ -5,49 +5,74 @@ import { ChatInterface } from "@/components/messaging/ChatInterface";
 import { messagesService } from "@/lib/services/messages";
 import { useState, useEffect } from "react";
 import { Conversation, Message } from "@/lib/services/messages";
-import { useRouter } from "next/navigation"; // Change to next/navigation for Next.js 13+ App Router
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export default function MessagesPage() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string>();
+  const [selectedConversationId, setSelectedConversationId] =
+    useState<string>();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentUserId] = useState("0ca375ca-d2ef-4b7b-8edd-57194c761e59"); // This will come from auth context later
-  const [isClient, setIsClient] = useState(false);
-  
-  // Use the router hook directly at the component level
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>();
   const router = useRouter();
 
   useEffect(() => {
-    setIsClient(true);
-    // Load conversations when component mounts
     const loadConversations = async () => {
-      // You may want to add this function to load conversations
-      const result = await messagesService.getConversations();
-      if (result.success && "data" in result) {
-        setConversations(result.data as Conversation[]);
+      try {
+        setIsLoading(true);
+        const result = await messagesService.getConversations();
+        if (result.success && "data" in result) {
+          setConversations(result.data as Conversation[]);
+        } else {
+          setError(result.error || "Failed to load conversations");
+        }
+      } catch (err) {
+        setError("An error occurred while loading conversations");
+      } finally {
+        setIsLoading(false);
       }
     };
-    
+
     loadConversations();
   }, []);
 
   const handleSelectConversation = async (conversationId: string) => {
-    setSelectedConversationId(conversationId);
-    const result = await messagesService.getMessages(conversationId);
-    if (result.success && "data" in result) {
-      setMessages(result.data as Message[]);
+    try {
+      setIsLoading(true);
+      setSelectedConversationId(conversationId);
+      const result = await messagesService.getMessages(conversationId);
+      if (result.success && "data" in result) {
+        setMessages(result.data as Message[]);
+      } else {
+        setError(result.error || "Failed to load messages");
+      }
+    } catch (err) {
+      setError("An error occurred while loading messages");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSendMessage = async (content: string) => {
     if (!selectedConversationId) return;
-    const result = await messagesService.sendMessage({
-      content,
-      receiverId: "2", // This will come from the conversation data
-      listingId: "1", // This will come from the conversation data
-    });
-    if (result.success && "data" in result) {
-      setMessages([...messages, result.data as Message]);
+
+    try {
+      const [listingId, otherUserId] = selectedConversationId.split("_");
+      const result = await messagesService.sendMessage({
+        content,
+        receiver_id: otherUserId,
+        listing_id: listingId,
+      });
+
+      if (result.success && "data" in result) {
+        setMessages([...messages, result.data as Message]);
+      } else {
+        setError(result.error || "Failed to send message");
+      }
+    } catch (err) {
+      setError("An error occurred while sending the message");
     }
   };
 
@@ -55,8 +80,20 @@ export default function MessagesPage() {
     router.back();
   };
 
-  if (!isClient) {
-    return null; // Don't render anything until it's mounted on the client
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4 h-[calc(100vh-4rem)] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
   }
 
   return (
@@ -71,17 +108,19 @@ export default function MessagesPage() {
           />
         </div>
         <div className="md:col-span-2 border rounded-lg">
-          <button onClick={handleBackClick} className="mb-4">
-            Back
-          </button>
+          <div className="p-4 border-b">
+            <Button variant="ghost" onClick={handleBackClick}>
+              Back
+            </Button>
+          </div>
           {selectedConversationId ? (
             <ChatInterface
               messages={messages}
               onSendMessage={handleSendMessage}
-              currentUserId={currentUserId}
+              currentUserId={localStorage.getItem("userId") || ""}
               otherUser={{
-                id: "2",
-                username: "John Doe", // This will come from the conversation data
+                id: selectedConversationId.split("_")[1],
+                username: "Other User", // This should come from the conversation data
               }}
             />
           ) : (

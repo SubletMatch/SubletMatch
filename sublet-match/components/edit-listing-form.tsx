@@ -47,3 +47,4 @@ export function EditListingForm({ listing }: EditListingFormProps) {
 
   return <ListingForm listing={listing} onSubmit={handleSubmit} />;
 }
+ 

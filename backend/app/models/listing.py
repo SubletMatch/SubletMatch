@@ -39,6 +39,7 @@ class Listing(Base):
     # Relationships
     user = relationship("User", back_populates="listings")
     images = relationship("ListingImage", back_populates="listing", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="listing", cascade="all, delete-orphan")
 
 class ListingImage(Base):
     __tablename__ = "listing_images"

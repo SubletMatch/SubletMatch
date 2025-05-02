@@ -177,13 +177,15 @@ class ListingService {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${API_URL}/api/v1/listings`, {
+      const response = await fetch(`${this.baseUrl}/listings`, {
         method: "GET",
         headers,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch listings");
+        const errorData = await response.json();
+        console.error("Error fetching listings:", errorData);
+        throw new Error(errorData.detail || "Failed to fetch listings");
       }
 
       return await response.json();

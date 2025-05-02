@@ -394,3 +394,4 @@ export function ListingForm({ listing, onSubmit }: ListingFormProps) {
     </form>
   );
 }
+ 
