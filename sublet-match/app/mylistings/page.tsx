@@ -124,13 +124,15 @@ export default function MyListingsPage() {
           {listings.map((listing) => (
             <Card key={listing.id} className="overflow-hidden">
               {listing.images && listing.images.length > 0 && (
-                <div className="relative h-48">
-                  <img
-                    src={listing.images[0].image_url}
-                    alt={listing.title}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
+                <>
+                  <div className="relative h-48">
+                    <img
+                      src={listing.images[0].image_url}
+                      alt={listing.title}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                </>
               )}
               <CardHeader>
                 <CardTitle>{listing.title}</CardTitle>

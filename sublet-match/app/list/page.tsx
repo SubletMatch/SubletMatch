@@ -4,17 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building,
-  Calendar,
-  MapPin,
   DollarSign,
-  Home,
   Bed,
   Bath,
   ImagePlus,
   X,
 } from "lucide-react";
-import Image from "next/image";
-
+import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +18,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -36,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 
 const STATES = [
   "AL",
@@ -141,21 +137,68 @@ export default function ListPage() {
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newImages = Array.from(e.target.files);
-      setImages([...images, ...newImages]);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+  
+    const newFiles = Array.from(e.target.files);
+    const previews: string[] = [];
+    const accepted: File[] = [];
+  
+    for (const file of newFiles) {
 
-      // Create previews for new images
-      newImages.forEach((file) => {
+      // ✅ Isolate only imageCompression
+      const bufferReader = new FileReader();
+      bufferReader.onloadend = () => {
+        const buffer = new Uint8Array(bufferReader.result as ArrayBuffer);
+        const sig = buffer.slice(0, 4);
+        console.log(
+          `🧪 File: ${file.name}, type: ${file.type}, signature:`,
+          Array.from(sig).map((b) => b.toString(16).toUpperCase())
+        );
+        // Should print: ['FF', 'D8', 'FF', 'E0'] or something similar
+      };
+      bufferReader.readAsArrayBuffer(file);
+      
+      // ✅ Now proceed with compression and preview logic
+      let compressed: File = file;
+    
+      try {
+        compressed = await imageCompression(file, {
+          maxSizeMB: 2.5,              // Allow larger file
+          maxWidthOrHeight: 2400,      // Retain more detail
+          initialQuality: 0.95,        // Preserve quality
+        });
+        
+      } catch (compressionError) {
+        console.warn("Compression error:", compressionError);
+      }
+  
+      try {
         const reader = new FileReader();
+  
         reader.onloadend = () => {
-          if (reader.result) {
-            setImagePreviews((prev) => [...prev, reader.result as string]);
+          const result = reader.result;
+          if (typeof result === "string" && result.startsWith("data:image/")) {
+            previews.push(result);
+            accepted.push(file);
+  
+            if (previews.length === newFiles.length) {
+              setImagePreviews((prev) => [...prev, ...previews]);
+              setImages((prev) => [...prev, ...accepted]);
+            }
+          } else {
+            console.warn("⚠️ Invalid preview string:", result);
           }
         };
-        reader.readAsDataURL(file); // <- this works for all types, even jpeg
-      });
+  
+        reader.onerror = (readerError) => {
+          console.error("❌ FileReader failed:", readerError);
+        };
+  
+        reader.readAsDataURL(compressed);
+      } catch (readerCrash) {
+        console.error("❌ Unexpected readAsDataURL crash:", readerCrash);
+      }
     }
   };
 

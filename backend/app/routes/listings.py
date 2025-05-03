@@ -109,7 +109,7 @@ async def get_listing(
                 "id": image.id,
                 "listing_id": image.listing_id,
                 "created_at": image.created_at,
-                "image_url": f"/uploads/{image.image_url}"
+                "image_url": image.image_url
             } for image in images],
             "user": {
                 "id": user.id,

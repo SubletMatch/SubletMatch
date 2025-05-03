@@ -232,8 +232,8 @@ export default function DashboardPage() {
                           <Image
                             src={
                               listing.images && listing.images.length > 0
-                                ? `data:image/jpeg;base64,${listing.images[0].image_data}`
-                                : "/placeholder.jpg"
+                                ? listing.images[0].image_url
+                                : ""
                             }
                             alt={listing.title}
                             fill

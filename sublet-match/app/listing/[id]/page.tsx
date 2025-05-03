@@ -187,10 +187,12 @@ export default function ListingPage({
               <div className="relative overflow-hidden rounded-xl mb-6">
                 <div className="aspect-video relative">
                   <Image
-                    src={`http://localhost:8000${listing.images[currentImageIndex]?.image_url}`}
+                    src={listing.images[currentImageIndex].image_url}
                     alt={`Image ${currentImageIndex + 1} of ${listing.title}`}
                     fill
-                    className="w-full h-full object-cover"
+                    className="object-cover rounded-lg"
+                    sizes="(max-width: 768px) 100vw, 66vw"
+                    priority
                   />
                   <Button
                     variant="ghost"
@@ -211,10 +213,10 @@ export default function ListingPage({
                 </div>
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
                   {listing.images.map((image) => (
-                    <div key={image.id} className="relative aspect-square">
+                    <div key={image.image_url} className="relative aspect-square">
                       <Image
-                        src={`http://localhost:8000${image.image_url}`}
-                        alt={`Listing image ${image.id}`}
+                        src={image.image_url}
+                        alt={`Listing image ${image.image_url}`}
                         fill
                         className="object-cover rounded-lg"
                       />
