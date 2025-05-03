@@ -12,6 +12,8 @@ export interface Message {
 export interface Conversation {
   id: string;
   listing_id: string;
+  listing_title?: string;
+  listing_owner_id?: string;
   participants: {
     id: string;
     username: string;

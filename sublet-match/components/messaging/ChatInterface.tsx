@@ -104,7 +104,7 @@ export function ChatInterface({
               >
                 <p className="text-sm">{message.content}</p>
                 <span className="text-xs opacity-70 mt-1 block">
-                  {formatDistanceToNow(new Date(message.createdAt), {
+                  {formatDistanceToNow(new Date(message.timestamp), {
                     addSuffix: true,
                   })}
                 </span>

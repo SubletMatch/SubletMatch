@@ -37,6 +37,8 @@ class Participant(BaseModel):
 class ConversationOut(BaseModel):
     id: str
     listing_id: str
+    listing_title: Optional[str] = None
+    listing_owner_id: Optional[str] = None
     participants: List[Participant]
     lastMessage: MessageOut
     unreadCount: int = 0
@@ -65,6 +67,8 @@ class ConversationOut(BaseModel):
             return cls(
                 id=str(data["id"]),
                 listing_id=str(data["listing_id"]),
+                listing_title=data.get("listing_title"),
+                listing_owner_id=data.get("listing_owner_id"),
                 participants=[
                     Participant(id=str(p["id"]), username=p["username"])
                     for p in data["participants"]

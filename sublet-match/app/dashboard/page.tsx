@@ -62,7 +62,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("listings");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -401,11 +401,12 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-4">
                     {conversations.map((conversation) => {
-                      const otherParticipant = conversation.participants.find(
-                        (p) => p.id !== localStorage.getItem("userId")
+                      // Always show the listing owner's username
+                      const ownerParticipant = conversation.participants.find(
+                        (p) => p.id === conversation.listing_owner_id
                       );
 
-                      if (!otherParticipant) return null;
+                      if (!ownerParticipant) return null;
 
                       return (
                         <Card
@@ -421,15 +422,16 @@ export default function DashboardPage() {
                               <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                                   <span className="text-primary font-medium">
-                                    {otherParticipant.username[0].toUpperCase()}
+                                    {ownerParticipant.username[0].toUpperCase()}
                                   </span>
                                 </div>
                                 <div>
                                   <CardTitle className="text-base">
-                                    {otherParticipant.username}
+                                    {ownerParticipant.username}
                                   </CardTitle>
                                   <CardDescription>
-                                    Re: Listing {conversation.listing_id}
+                                    {conversation.listing_title ||
+                                      conversation.listing_id}
                                   </CardDescription>
                                 </div>
                               </div>
