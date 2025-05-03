@@ -86,31 +86,37 @@ export function ChatInterface({
       </div>
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.senderId === currentUserId
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
-            >
+          {messages.map((message) => {
+            const isCurrentUser = message.sender_id === currentUserId;
+            return (
               <div
-                className={`max-w-[70%] rounded-lg p-3 ${
-                  message.senderId === currentUserId
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                key={message.id}
+                className={`flex w-full ${
+                  isCurrentUser ? "justify-end" : "justify-start"
                 }`}
               >
-                <p className="text-sm">{message.content}</p>
-                <span className="text-xs opacity-70 mt-1 block">
-                  {formatDistanceToNow(new Date(message.timestamp), {
-                    addSuffix: true,
-                  })}
-                </span>
+                <div
+                  className={`max-w-[70%] rounded-2xl p-3 shadow-md border text-sm break-words
+                    ${
+                      isCurrentUser
+                        ? "bg-black text-white border-black rounded-br-none"
+                        : "bg-gray-100 text-black border-gray-300 rounded-bl-none"
+                    }`}
+                  style={{
+                    marginLeft: isCurrentUser ? "auto" : 0,
+                    marginRight: isCurrentUser ? 0 : "auto",
+                  }}
+                >
+                  <p>{message.content}</p>
+                  <span className="text-xs opacity-70 mt-1 block text-right">
+                    {formatDistanceToNow(new Date(message.timestamp), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
       <form onSubmit={handleSubmit} className="border-t p-4">

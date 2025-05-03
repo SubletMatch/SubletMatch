@@ -3,11 +3,12 @@
 import { MessageList } from "@/components/messaging/MessageList";
 import { ChatInterface } from "@/components/messaging/ChatInterface";
 import { messagesService } from "@/lib/services/messages";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Conversation, Message } from "@/lib/services/messages";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { userService } from "@/app/services/user";
 
 export default function MessagesPage() {
   const [selectedConversationId, setSelectedConversationId] =
@@ -18,6 +19,7 @@ export default function MessagesPage() {
   const [error, setError] = useState<string>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -56,6 +58,23 @@ export default function MessagesPage() {
     }
   }, [searchParams, conversations]);
 
+  useEffect(() => {
+    if (!selectedConversationId) return;
+
+    const pollMessages = async () => {
+      const result = await messagesService.getMessages(selectedConversationId);
+      if (result.success && "data" in result) {
+        setMessages(result.data as Message[]);
+      }
+    };
+
+    pollingRef.current = setInterval(pollMessages, 3000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [selectedConversationId]);
+
   const handleSelectConversation = async (conversationId: string) => {
     try {
       setIsLoading(true);
@@ -77,12 +96,44 @@ export default function MessagesPage() {
     if (!selectedConversationId) return;
 
     try {
-      const [listingId, otherUserId] = selectedConversationId.split("_");
+      const [listingId] = selectedConversationId.split("_");
+      let currentUserId = localStorage.getItem("userId");
+      // If userId is missing, fetch and set it
+      if (!currentUserId) {
+        const token = localStorage.getItem("token");
+        if (token) {
+          try {
+            const user = await userService.getCurrentUser(token);
+            if (user?.id) {
+              localStorage.setItem("userId", user.id);
+              currentUserId = user.id;
+            }
+          } catch (e) {
+            setError("Could not fetch user info. Please re-login.");
+            return;
+          }
+        } else {
+          setError("You must be logged in to send messages.");
+          return;
+        }
+      }
+      const conversation = conversations.find(
+        (c) => c.id === selectedConversationId
+      );
+      const receiver = conversation?.participants.find(
+        (p) => p.id !== currentUserId
+      );
+
+      if (!receiver) {
+        setError("Could not determine receiver for this conversation.");
+        return;
+      }
+
       const result = await messagesService.sendMessage({
         content,
-        receiver_id: otherUserId,
+        receiver_id: receiver.id,
         listing_id: listingId,
-        sender_id: localStorage.getItem("userId") || "",
+        sender_id: currentUserId,
       });
 
       if (result.success && "data" in result) {
