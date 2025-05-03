@@ -101,6 +101,12 @@ export default function SignIn() {
               Sign up
             </Link>
           </div>
+          <Link
+            href="/forgot-password"
+            className="text-sm text-blue-500 hover:underline"
+          >
+            Forgot Password?
+          </Link>
         </CardFooter>
       </Card>
     </div>

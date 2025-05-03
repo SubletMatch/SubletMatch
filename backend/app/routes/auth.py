@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models.user import User
+from ..models.user import User, PasswordResetToken
 from ..auth.utils import verify_password, get_password_hash, create_access_token, get_current_user
-from datetime import timedelta
+from datetime import timedelta, datetime
 from ..config import settings
 from pydantic import BaseModel, EmailStr
+from ..services.email import email_service
+import uuid
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
@@ -28,6 +30,13 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 @router.post("/signup", response_model=Token)
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
@@ -81,4 +90,68 @@ async def get_current_user_info(
         "email": current_user.email,
         "name": current_user.name,
         "created_at": current_user.created_at.isoformat()
-    } 
+    }
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        user = db.query(User).filter(User.email == request.email).first()
+        if not user:
+            # Don't reveal if user exists or not for security
+            return {"message": "If an account with that email exists, a password reset link has been sent."}
+        
+        # Generate a unique token
+        token = str(uuid.uuid4())
+        reset_token = PasswordResetToken(
+            token=token,
+            user_id=user.id
+        )
+        db.add(reset_token)
+        db.commit()
+        
+        # Create reset link
+        reset_link = f"http://localhost:3000/reset-password?token={token}"
+        
+        # Send email
+        if settings.SENDGRID_API_KEY:
+            email_sent = await email_service.send_password_reset_email(user.email, reset_link)
+            if not email_sent:
+                print(f"Failed to send email. Reset link: {reset_link}")
+        else:
+            print(f"SendGrid not configured. Reset link: {reset_link}")
+        
+        return {"message": "If an account with that email exists, a password reset link has been sent."}
+    except Exception as e:
+        print(f"Error in forgot_password: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing your request"
+        )
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == request.token,
+        PasswordResetToken.is_used == False,
+        PasswordResetToken.expires_at > datetime.utcnow()
+    ).first()
+    
+    if not reset_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token"
+        )
+    
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update the password
+    user.password_hash = get_password_hash(request.new_password)
+    reset_token.is_used = True
+    db.commit()
+    
+    return {"message": "Password has been reset successfully"} 

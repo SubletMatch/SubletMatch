@@ -7,6 +7,7 @@ export interface AuthResponse {
   success: boolean;
   error?: string;
   token?: string;
+  message?: string;
 }
 
 export const authService = {
@@ -54,6 +55,49 @@ export const authService = {
       return {
         success: false,
         error: error.response?.data?.detail || "Failed to create account",
+      };
+    }
+  },
+
+  async forgotPassword(email: string): Promise<AuthResponse> {
+    try {
+      const response = await axios.post(`${API_URL}/auth/forgot-password`, {
+        email,
+      });
+
+      return {
+        success: true,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error("Forgot password error:", error.response?.data || error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          "Failed to send reset link. Please try again later.",
+      };
+    }
+  },
+
+  async resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<AuthResponse> {
+    try {
+      const response = await axios.post(`${API_URL}/auth/reset-password`, {
+        token,
+        new_password: newPassword,
+      });
+
+      return {
+        success: true,
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to reset password",
       };
     }
   },
