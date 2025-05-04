@@ -99,6 +99,9 @@ const PROPERTY_TYPES = [
   "Room",
 ];
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
 export default function ListPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -243,7 +246,7 @@ export default function ListPage() {
         amenities: amenities,
       };
   
-      const response = await fetch("http://localhost:8000/api/v1/listings/create", {
+      const response = await fetch(`${API_URL}/listings/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -270,7 +273,7 @@ export default function ListPage() {
         });
   
         const imageResponse = await fetch(
-          `http://localhost:8000/api/v1/listings/${listing.id}/images`,
+          `${API_URL}/listings/${listing.id}/images`,
           {
             method: "POST",
             headers: {

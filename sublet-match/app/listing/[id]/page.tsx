@@ -51,6 +51,9 @@ interface Listing {
   amenities?: string;
 }
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
 interface PageParams {
   id: string;
 }
@@ -84,7 +87,7 @@ export default function ListingPage({
 
       try {
         const response = await fetch(
-          `http://localhost:8000/api/v1/listings/${listingId}`,
+          `${API_URL}/listings/${listingId}`,
           {
             headers: {
               Authorization: `Bearer ${authService.getToken()}`,

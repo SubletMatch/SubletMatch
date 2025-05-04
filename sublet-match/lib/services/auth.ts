@@ -1,12 +1,14 @@
 // This is a placeholder service that will be implemented when the backend is ready
-export const authService = {
+export const authService = {  
   async signIn(email: string, password: string) {
     try {
       const formData = new FormData();
       formData.append("username", email);
       formData.append("password", password);
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-      const response = await fetch("http://localhost:8000/api/v1/auth/token", {
+      const response = await fetch(`${API_URL}/auth/token`, {
         method: "POST",
         body: formData,
       });
@@ -22,7 +24,7 @@ export const authService = {
         localStorage.setItem("token", data.access_token);
         // Fetch user info and store userId
         try {
-          const userRes = await fetch("http://localhost:8000/api/v1/auth/me", {
+          const userRes = await fetch(`${API_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${data.access_token}` },
           });
           if (userRes.ok) {
@@ -44,7 +46,10 @@ export const authService = {
 
   async signUp(email: string, username: string, password: string) {
     try {
-      const response = await fetch("http://localhost:8000/api/v1/auth/signup", {
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+      const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,7 +72,7 @@ export const authService = {
         localStorage.setItem("token", data.access_token);
         // Fetch user info and store userId
         try {
-          const userRes = await fetch("http://localhost:8000/api/v1/auth/me", {
+          const userRes = await fetch(`${API_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${data.access_token}` },
           });
           if (userRes.ok) {

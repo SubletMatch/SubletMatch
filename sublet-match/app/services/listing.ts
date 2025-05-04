@@ -42,7 +42,7 @@ export interface CreateListingData {
 }
 
 class ListingService {
-  private baseUrl = "http://localhost:8000/api/v1";
+  private baseUrl = API_URL;
 
   async getMyListings(): Promise<Listing[]> {
     const token = authService.getToken();

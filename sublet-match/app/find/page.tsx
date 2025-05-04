@@ -33,6 +33,8 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { listingService } from "@/app/services/listing";
 import { authService } from "@/lib/services/auth";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export default function FindPage() {
   const [priceRange, setPriceRange] = useState([500, 3000]);
@@ -347,7 +349,7 @@ export default function FindPage() {
                       <div className="aspect-video w-full overflow-hidden">
                           {listing.images && listing.images.length > 0 ? (
                             <Image
-                              src={`http://localhost:8000${listing.images[0].image_url}`}
+                              src={`${API_URL}${listing.images[0].image_url}`}
                           alt={listing.title}
                               width={500}
                               height={300}
