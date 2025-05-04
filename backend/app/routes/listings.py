@@ -2,11 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+import os
+from ..schemas.listing import ListingImage as ListingImageSchema
+import shutil
 import uuid
 import logging
-import os
-import shutil
-from ..database import get_db
+import mimetypes
+import boto3
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+from ..core.database import get_db
 from ..models.listing import Listing, ListingImage
 from ..models.user import User
 from ..schemas.listing import ListingCreate, ListingUpdate, ListingResponse, Listing as ListingSchema, ListingImage as ListingImageSchema
@@ -16,10 +20,6 @@ from ..auth.utils import get_current_user as auth_get_current_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-UPLOAD_DIR = "uploads/listings"
-
-# Create upload directory if it doesn't exist
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("/my", response_model=List[ListingSchema])
 async def get_my_listings(
@@ -159,7 +159,7 @@ async def get_listing(
                 "id": image.id,
                 "listing_id": image.listing_id,
                 "created_at": image.created_at,
-                "image_url": f"/uploads/{image.image_url}"
+                "image_url": image.image_url
             } for image in images],
             "user": {
                 "id": user.id,
@@ -259,9 +259,12 @@ async def delete_listing(
     # Delete associated images
     images = db.query(ListingImage).filter(ListingImage.listing_id == listing_id).all()
     for image in images:
-        # Delete the image file
-        if os.path.exists(image.image_url):
-            os.remove(image.image_url)
+        try:
+            # Extract filename from S3 URL
+            image_path = image.image_url.split('/')[-1]
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=image_path)
+        except Exception as e:
+            logger.error(f"Error deleting S3 object: {str(e)}")
         db.delete(image)
     
     db.delete(db_listing)
@@ -269,60 +272,58 @@ async def delete_listing(
     return {"message": "Listing deleted successfully"}
 
 @router.post("/{listing_id}/images", response_model=List[ListingImageSchema])
-async def upload_listing_images(
+async def upload_images(
     listing_id: str,
     images: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    bucket_name = "sublet-match-images"
+    s3 = boto3.client("s3")
+
     try:
-        # Verify listing exists and belongs to user
-        listing = db.query(Listing).filter(
-            Listing.id == listing_id,
-            Listing.user_id == current_user.id
-        ).first()
-        
+        # Verify listing ownership
+        listing = db.query(Listing).filter(Listing.id == listing_id).first()
         if not listing:
             raise HTTPException(status_code=404, detail="Listing not found")
+        if listing.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to upload images for this listing")
 
-        uploaded_images = []
+        # Process each uploaded image
         for image in images:
-            # Generate unique filename
-            filename = f"{uuid.uuid4()}_{image.filename}"
-            relative_path = f"listings/{filename}"
-            file_path = os.path.join(UPLOAD_DIR, filename)
-            
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-            # Save the file
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(image.file, buffer)
-            
-            # Create database record with relative path
-            db_image = ListingImage(
-                image_url=relative_path,
-                listing_id=listing_id
-            )
-            db.add(db_image)
-            uploaded_images.append(db_image)
+            extension = os.path.splitext(image.filename)[1]
+            unique_filename = f"{uuid.uuid4()}{extension}"
+
+            try:
+                s3.upload_fileobj(
+                    image.file,
+                    bucket_name,
+                    unique_filename,
+                    ExtraArgs={"ContentType": image.content_type}
+                )
+
+                image_url = f"https://{bucket_name}.s3.amazonaws.com/{unique_filename}"
+
+                db_image = ListingImage(
+                    listing_id=listing_id,
+                    image_url=image_url
+                )
+                db.add(db_image)
+
+            except Exception as e:
+                logger.error(f"Error uploading {image.filename}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to upload image {image.filename}: {str(e)}"
+                )
 
         db.commit()
-        for image in uploaded_images:
-            db.refresh(image)
 
-        # Convert to response with full URLs
-        response_images = []
-        for image in uploaded_images:
-            response_images.append({
-                "id": image.id,
-                "listing_id": image.listing_id,
-                "created_at": image.created_at,
-                "image_url": f"/uploads/{image.image_url}"
-            })
+        return db.query(ListingImage).filter(ListingImage.listing_id == listing_id).all()
 
-        return response_images
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error uploading images: {str(e)}")
+        logger.error(f"Unexpected error uploading images: {e}")
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(e)) 
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while uploading images.")

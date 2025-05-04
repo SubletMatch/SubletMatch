@@ -4,17 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building,
-  Calendar,
-  MapPin,
   DollarSign,
-  Home,
   Bed,
   Bath,
   ImagePlus,
   X,
 } from "lucide-react";
-import Image from "next/image";
-
+import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +18,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -36,7 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Image from "next/image";
 
+// List of US states
 const STATES = [
   "AL",
   "AK",
@@ -90,6 +87,7 @@ const STATES = [
   "WY",
 ];
 
+// List of property types
 const PROPERTY_TYPES = [
   "Apartment",
   "House",
@@ -142,39 +140,93 @@ export default function ListPage() {
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newImages = Array.from(e.target.files);
-      setImages([...images, ...newImages]);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+  
+    const newFiles = Array.from(e.target.files);
+    const previews: string[] = [];
+    const accepted: File[] = [];
+  
+    for (const file of newFiles) {
 
-      // Create previews for new images
-      newImages.forEach((file) => {
+      // ✅ Isolate only imageCompression
+      const bufferReader = new FileReader();
+      bufferReader.onloadend = () => {
+        const buffer = new Uint8Array(bufferReader.result as ArrayBuffer);
+        const sig = buffer.slice(0, 4);
+        console.log(
+          `🧪 File: ${file.name}, type: ${file.type}, signature:`,
+          Array.from(sig).map((b) => b.toString(16).toUpperCase())
+        );
+        // Should print: ['FF', 'D8', 'FF', 'E0'] or something similar
+      };
+      bufferReader.readAsArrayBuffer(file);
+      
+      // ✅ Now proceed with compression and preview logic
+      let compressed: File = file;
+    
+      try {
+        compressed = await imageCompression(file, {
+          maxSizeMB: 2.5,              // Allow larger file
+          maxWidthOrHeight: 2400,      // Retain more detail
+          initialQuality: 0.95,        // Preserve quality
+        });
+        
+      } catch (compressionError) {
+        console.warn("Compression error:", compressionError);
+      }
+  
+      try {
         const reader = new FileReader();
+  
         reader.onloadend = () => {
-          setImagePreviews((prev) => [...prev, reader.result as string]);
+          const result = reader.result;
+          if (typeof result === "string" && result.startsWith("data:image/")) {
+            previews.push(result);
+            accepted.push(file);
+  
+            if (previews.length === newFiles.length) {
+              setImagePreviews((prev) => [...prev, ...previews]);
+              setImages((prev) => [...prev, ...accepted]);
+            }
+          } else {
+            console.warn("⚠️ Invalid preview string:", result);
+          }
         };
-        reader.readAsDataURL(file);
-      });
+  
+        reader.onerror = (readerError) => {
+          console.error("❌ FileReader failed:", readerError);
+        };
+  
+        reader.readAsDataURL(compressed);
+      } catch (readerCrash) {
+        console.error("❌ Unexpected readAsDataURL crash:", readerCrash);
+      }
     }
   };
 
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    const newImages = [...images];
+    const newPreviews = [...imagePreviews];
+    
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    
+    setImages(newImages);
+    setImagePreviews(newPreviews);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
+  
     try {
       const token = authService.getToken();
       if (!token) {
         throw new Error("Not authenticated");
       }
-
-      // Create listing first
+  
       const listingData = {
         title: formData.title,
         description: formData.description,
@@ -190,36 +242,33 @@ export default function ListPage() {
         host: "Active", // Default host status
         amenities: amenities,
       };
-
-      const response = await fetch(
-        "http://localhost:8000/api/v1/listings/create",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(listingData),
-        }
-      );
-
+  
+      const response = await fetch("http://localhost:8000/api/v1/listings/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(listingData),
+      });
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to create listing");
       }
-
+  
       const listing = await response.json();
       console.log("Created listing:", listing);
-
+  
       // Upload images if any
       if (images.length > 0) {
         console.log("Uploading images:", images);
-
+  
         const formData = new FormData();
         images.forEach((file) => {
           formData.append("images", file);
         });
-
+  
         const imageResponse = await fetch(
           `http://localhost:8000/api/v1/listings/${listing.id}/images`,
           {
@@ -230,21 +279,26 @@ export default function ListPage() {
             body: formData,
           }
         );
-
+  
+        const imagesData = await imageResponse.json();
+  
         if (!imageResponse.ok) {
-          const errorData = await imageResponse.json();
-          throw new Error(errorData.detail || "Failed to upload images");
+          toast({
+            title: "Upload Failed",
+            description: imagesData.detail || "Failed to upload images",
+            variant: "destructive",
+          });
+          throw new Error(imagesData.detail || "Image upload failed");
         }
-
-        const uploadedImages = await imageResponse.json();
-        console.log("Uploaded images:", uploadedImages);
+  
+        console.log("Images uploaded:", imagesData);
       }
-
+  
       toast({
         title: "Listing created!",
         description: "Your listing has been created successfully.",
       });
-
+  
       router.push("/dashboard");
     } catch (err: any) {
       console.error("Error creating listing:", err);
@@ -253,6 +307,7 @@ export default function ListPage() {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -473,13 +528,9 @@ export default function ListPage() {
 
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square group">
-                        <Image
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          fill
-                          className="object-cover rounded-lg"
-                        />
+                      <div key={index} className="relative aspect-square w-full h-auto group">
+                        <Image src={preview} alt={`Preview ${index + 1}`} className="object-contain object-center rounded-lg" fill />
+
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
