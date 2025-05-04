@@ -20,6 +20,16 @@ from ..auth.utils import get_current_user as auth_get_current_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Initialize S3 client
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    region_name=os.getenv('AWS_DEFAULT_REGION')
+)
+
+# S3 bucket name
+S3_BUCKET = "sublet-match-images"
 
 @router.get("/my", response_model=List[ListingSchema])
 async def get_my_listings(
@@ -327,3 +337,52 @@ async def upload_images(
         logger.error(f"Unexpected error uploading images: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail="An unexpected error occurred while uploading images.")
+
+@router.delete("/{listing_id}/images/{image_id}")
+async def delete_listing_image(
+    listing_id: str,
+    image_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        # Verify listing ownership
+        listing = db.query(Listing).filter(Listing.id == listing_id).first()
+        if not listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        if listing.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to delete images for this listing")
+
+        # Find the image by its ID
+        image = db.query(ListingImage).filter(
+            ListingImage.id == image_id,
+            ListingImage.listing_id == listing_id
+        ).first()
+        
+        if not image:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        # Delete from S3
+        try:
+            # Extract filename from S3 URL
+            image_path = image.image_url.split('/')[-1]
+            logger.info(f"Attempting to delete S3 object: {image_path}")
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=image_path)
+            logger.info(f"Successfully deleted S3 object: {image_path}")
+        except Exception as e:
+            logger.error(f"Error deleting S3 object: {str(e)}")
+            # Continue with database deletion even if S3 deletion fails
+            logger.warning("Continuing with database deletion despite S3 error")
+
+        # Delete from database
+        db.delete(image)
+        db.commit()
+
+        return {"message": "Image deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error deleting image: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while deleting the image")

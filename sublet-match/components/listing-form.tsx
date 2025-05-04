@@ -32,9 +32,10 @@ interface ListingFormProps {
     bathrooms: number;
     available_from: string;
     available_to: string;
-    amenities: string;
+    amenities?: string;
   };
-  onSubmit?: (formData: any) => Promise<void>;
+  onSubmit: (formData: Record<string, string | number>) => Promise<void>;
+  showButtons?: boolean;
 }
 
 interface FormErrors {
@@ -62,7 +63,11 @@ const propertyTypes = [
   { value: "Room", label: "Room" },
 ];
 
-export function ListingForm({ listing, onSubmit }: ListingFormProps) {
+export function ListingForm({
+  listing,
+  onSubmit,
+  showButtons = true,
+}: ListingFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -154,17 +159,7 @@ export function ListingForm({ listing, onSubmit }: ListingFormProps) {
         property_type: formData.property_type,
       };
 
-      if (onSubmit) {
-        await onSubmit(data);
-      } else if (listing) {
-        await listingService.updateListing(listing.id, data);
-        toast.success("Listing updated successfully");
-        router.push("/dashboard");
-      } else {
-        await listingService.createListing(data);
-        toast.success("Listing created successfully");
-        router.push("/dashboard");
-      }
+      await onSubmit(data);
     } catch (error) {
       console.error("Error saving listing:", error);
       toast.error("Failed to save listing");
@@ -374,24 +369,21 @@ export function ListingForm({ listing, onSubmit }: ListingFormProps) {
         />
       </div>
 
-      <div className="flex justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/dashboard")}
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading
-            ? "Saving..."
-            : listing
-            ? "Update Listing"
-            : "Create Listing"}
-        </Button>
-      </div>
+      {showButtons && (
+        <div className="flex justify-end gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/dashboard")}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
- 
