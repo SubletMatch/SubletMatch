@@ -89,12 +89,17 @@ export default function DashboardPage() {
         const user = await userService.getCurrentUser(token);
         setUserName(user.name);
         setUserEmail(user.email);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching user data:", error);
         setError("Failed to load user data. Please try again.");
-        if (error.response?.status === 401) {
-          authService.logout();
-          router.push("/signin");
+        
+        // Type guard to check if error is an AxiosError
+        if (error instanceof Error && 'response' in error) {
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError.response?.status === 401) {
+            authService.logout();
+            router.push("/signin");
+          }
         }
       }
     };
@@ -107,9 +112,9 @@ export default function DashboardPage() {
       try {
         const data = await listingService.getMyListings();
         setListings(data);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error fetching listings:", error);
-        setError(error.message || "Failed to fetch listings");
+        setError(error instanceof Error ? error.message : "Failed to fetch listings");
       } finally {
         setIsLoading(false);
       }
@@ -295,8 +300,20 @@ export default function DashboardPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {listings.map((listing) => (
-                      <Card key={listing.id} className="w-full">
-                        <CardContent className="p-6">
+                      <Card key={listing.id}>
+                        <div className="aspect-square relative">
+                          <Image
+                            src={
+                              listing.images && listing.images.length > 0
+                                ? listing.images[0].image_url
+                                : ""
+                            }
+                            alt={listing.title}
+                            fill
+                            className="object-contain object-center rounded-lg"
+                          />
+                        </div>
+                        <CardContent className="p-6 pb-2">
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="text-lg font-semibold">
