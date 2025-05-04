@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 class MessageBase(BaseModel):
@@ -16,18 +16,26 @@ class MessageOut(MessageBase):
     id: str
     timestamp: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        ser_json_tz="utc"
+    )
 
     @classmethod
     def from_orm(cls, obj):
-        # Convert UUID to string
+        # Ensure timestamp is always timezone-aware and in UTC
+        ts = obj.timestamp
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        else:
+            ts = ts.astimezone(timezone.utc)
         return cls(
             id=str(obj.id),
             content=obj.content,
             sender_id=str(obj.sender_id),
             receiver_id=str(obj.receiver_id),
             listing_id=str(obj.listing_id),
-            timestamp=obj.timestamp
+            timestamp=ts,
         )
 
 class Participant(BaseModel):
@@ -37,6 +45,8 @@ class Participant(BaseModel):
 class ConversationOut(BaseModel):
     id: str
     listing_id: str
+    listing_title: Optional[str] = None
+    listing_owner_id: Optional[str] = None
     participants: List[Participant]
     lastMessage: MessageOut
     unreadCount: int = 0
@@ -65,6 +75,8 @@ class ConversationOut(BaseModel):
             return cls(
                 id=str(data["id"]),
                 listing_id=str(data["listing_id"]),
+                listing_title=data.get("listing_title"),
+                listing_owner_id=data.get("listing_owner_id"),
                 participants=[
                     Participant(id=str(p["id"]), username=p["username"])
                     for p in data["participants"]

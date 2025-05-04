@@ -20,6 +20,20 @@ export const authService = {
       // Store the token in localStorage
       if (typeof window !== "undefined") {
         localStorage.setItem("token", data.access_token);
+        // Fetch user info and store userId
+        try {
+          const userRes = await fetch("http://localhost:8000/api/v1/auth/me", {
+            headers: { Authorization: `Bearer ${data.access_token}` },
+          });
+          if (userRes.ok) {
+            const user = await userRes.json();
+            if (user.id) {
+              localStorage.setItem("userId", user.id);
+            }
+          }
+        } catch (e) {
+          // Ignore userId set error
+        }
       }
       return { success: true, token: data.access_token };
     } catch (error) {
@@ -51,6 +65,20 @@ export const authService = {
       // Store the token in localStorage
       if (typeof window !== "undefined") {
         localStorage.setItem("token", data.access_token);
+        // Fetch user info and store userId
+        try {
+          const userRes = await fetch("http://localhost:8000/api/v1/auth/me", {
+            headers: { Authorization: `Bearer ${data.access_token}` },
+          });
+          if (userRes.ok) {
+            const user = await userRes.json();
+            if (user.id) {
+              localStorage.setItem("userId", user.id);
+            }
+          }
+        } catch (e) {
+          // Ignore userId set error
+        }
       }
       return { success: true, token: data.access_token };
     } catch (error) {
@@ -94,4 +122,3 @@ export const authService = {
     }
   },
 };
- 

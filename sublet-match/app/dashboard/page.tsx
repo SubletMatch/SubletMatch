@@ -62,7 +62,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("listings");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -401,8 +401,10 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-4">
                     {conversations.map((conversation) => {
+                      // Always show the other participant's username
+                      const currentUserId = localStorage.getItem("userId");
                       const otherParticipant = conversation.participants.find(
-                        (p) => p.id !== localStorage.getItem("userId")
+                        (p) => p.id !== currentUserId
                       );
 
                       if (!otherParticipant) return null;
@@ -429,7 +431,8 @@ export default function DashboardPage() {
                                     {otherParticipant.username}
                                   </CardTitle>
                                   <CardDescription>
-                                    Re: Listing {conversation.listing_id}
+                                    {conversation.listing_title ||
+                                      conversation.listing_id}
                                   </CardDescription>
                                 </div>
                               </div>

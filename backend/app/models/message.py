@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, String, Text, TIMESTAMP
+from sqlalchemy import Column, ForeignKey, String, Text, TIMESTAMP, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -13,7 +13,7 @@ class Message(Base):
     receiver_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     listing_id = Column(UUID(as_uuid=True), ForeignKey("listings.id"), nullable=False)
     content = Column(Text, nullable=False)
-    timestamp = Column(TIMESTAMP, nullable=False, server_default="now()")
+    timestamp = Column(TIMESTAMP(timezone=True), nullable=False)
 
     # Relationships
     sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_messages")
