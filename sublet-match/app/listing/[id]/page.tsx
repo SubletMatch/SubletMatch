@@ -26,6 +26,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/lib/services/auth";
 import { useRouter } from "next/navigation";
+import { Map } from "@/components/map";
+import { userService } from "@/app/services/user";
+import { messagesService } from "@/lib/services/messages";
 
 interface Listing {
   id: string;
@@ -45,6 +48,7 @@ interface Listing {
     name: string;
     email: string;
   };
+  amenities?: string;
 }
 
 interface PageParams {
@@ -123,13 +127,65 @@ export default function ListingPage({
     );
   };
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
+  const handleSendMessage = async () => {
+    if (!message.trim() || !listing) return;
+
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        console.error("No token found in localStorage");
+        router.push("/signin");
+        return;
+      }
+
+      // Get current user's ID from user service
+      try {
+        const currentUser = await userService.getCurrentUser(token);
+        if (!currentUser?.id) {
+          throw new Error("Could not get current user information");
+        }
+
+        console.log("Current user:", currentUser);
+        console.log("Listing user:", listing.user);
+        console.log("Listing ID:", listing.id);
+
+        const result = await messagesService.sendMessage({
+          content: message,
+          receiver_id: listing.user.id,
+          listing_id: listing.id,
+          sender_id: currentUser.id,
+        });
+
+        if (result.success) {
+          toast({
+            title: "Message sent!",
+            description: "Your message has been sent to the host.",
+          });
+          // Redirect to dashboard messages tab
+          router.push("/dashboard?tab=messages");
+        } else {
+          throw new Error(result.error || "Failed to send message");
+        }
+      } catch (error: unknown) {
+        console.error("Error getting current user:", error);
+        // If we get a 401, it means the token is invalid/expired
+        if (error instanceof Error && error.message.includes("401")) {
+          authService.logout();
+          router.push("/signin");
+          return;
+        }
+        throw error;
+      }
+    } catch (error: unknown) {
+      console.error("Error sending message:", error);
       toast({
-        title: "Message sent!",
-        description: "Your message has been sent to the host.",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to send message. Please try again.",
+        variant: "destructive",
       });
-      setMessage("");
     }
   };
 
@@ -174,7 +230,7 @@ export default function ListingPage({
         <div className="container py-8">
           <div className="flex items-center mb-6">
             <Link
-              href="/mylistings"
+              href="/dashboard"
               className="flex items-center text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
@@ -187,7 +243,7 @@ export default function ListingPage({
               <div className="relative overflow-hidden rounded-xl mb-6">
                 <div className="aspect-video relative">
                   <Image
-                    src={listing.images[currentImageIndex].image_url}
+                    src={listing.images[currentImageIndex]?.image_url}
                     alt={`Image ${currentImageIndex + 1} of ${listing.title}`}
                     fill
                     className="object-contain object-center rounded-lg"
@@ -287,18 +343,29 @@ export default function ListingPage({
                   <p className="text-muted-foreground">{listing.description}</p>
                 </TabsContent>
                 <TabsContent value="amenities" className="mt-4">
-                  <ul className="grid grid-cols-2 gap-2">
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                      {listing.property_type}
-                    </li>
-                  </ul>
+                  <div className="mt-8">
+                    <h2 className="text-2xl font-bold mb-4">Amenities</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {listing?.amenities?.split(" ").map((amenity, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-1 bg-muted rounded-full text-sm"
+                        >
+                          {amenity}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </TabsContent>
                 <TabsContent value="location" className="mt-4">
-                  <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                    <p className="text-muted-foreground">
-                      Map would be displayed here
-                    </p>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span>
+                        {listing.address}, {listing.city}, {listing.state}
+                      </span>
+                    </div>
+                    <Map city={listing.city} state={listing.state} />
                   </div>
                 </TabsContent>
               </Tabs>

@@ -121,6 +121,7 @@ export default function ListPage() {
     bedrooms: "",
     bathrooms: "",
   });
+  const [amenities, setAmenities] = useState("");
 
   useEffect(() => {
     // Check if user is authenticated
@@ -238,7 +239,8 @@ export default function ListPage() {
         bathrooms: parseFloat(formData.bathrooms),
         available_from: new Date(date.from).toISOString(),
         available_to: new Date(date.to).toISOString(),
-        host: "Active",
+        host: "Active", // Default host status
+        amenities: amenities,
       };
   
       const response = await fetch("http://localhost:8000/api/v1/listings/create", {
@@ -500,6 +502,21 @@ export default function ListPage() {
                   <DateRangePicker date={date} onDateChange={setDate} />
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Amenities</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter amenities separated by spaces (e.g. wifi parking pool gym laundry)"
+                    value={amenities}
+                    onChange={(e) => setAmenities(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Separate each amenity with a space. Common amenities
+                    include: wifi, parking, pool, gym, laundry, air
+                    conditioning, dishwasher, etc.
+                  </p>
+                </div>
+
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Photos</label>
@@ -542,9 +559,19 @@ export default function ListPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating..." : "Create Listing"}
-                </Button>
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push("/dashboard")}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Creating..." : "Create Listing"}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>

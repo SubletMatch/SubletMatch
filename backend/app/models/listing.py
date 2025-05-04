@@ -34,10 +34,12 @@ class Listing(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     host = Column(String, default="Active")
+    amenities = Column(Text, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="listings")
     images = relationship("ListingImage", back_populates="listing", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="listing", cascade="all, delete-orphan")
 
 class ListingImage(Base):
     __tablename__ = "listing_images"
