@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from uuid import UUID
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import json
 
@@ -42,13 +42,16 @@ def create_message(message: MessageCreate, db: Session = Depends(get_db)):
             sender_id=sender_id,
             receiver_id=receiver_id,
             listing_id=listing_id,
-            content=message.content
+            content=message.content,
+            timestamp=datetime.now(timezone.utc)
         )
         
         # Add to database
         db.add(db_message)
         db.commit()
         db.refresh(db_message)
+        
+        logger.info(f"Returning message with timestamp: {db_message.timestamp} (type: {type(db_message.timestamp)})")
         
         logger.info(f"Successfully created message with ID: {db_message.id}")
         return MessageOut.from_orm(db_message)

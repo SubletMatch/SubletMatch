@@ -97,7 +97,8 @@ export default function MessagesPage() {
 
     try {
       const [listingId] = selectedConversationId.split("_");
-      let currentUserId = localStorage.getItem("userId");
+      let rawUserId = localStorage.getItem("userId");
+      let currentUserId = rawUserId ? rawUserId : "";
       // If userId is missing, fetch and set it
       if (!currentUserId) {
         const token = localStorage.getItem("token");
@@ -120,18 +121,24 @@ export default function MessagesPage() {
       const conversation = conversations.find(
         (c) => c.id === selectedConversationId
       );
-      const receiver = conversation?.participants.find(
-        (p) => p.id !== currentUserId
-      );
+      let otherUser = { id: "", username: "Other User" };
+      if (conversation) {
+        const participant = conversation.participants.find(
+          (p) => p.id !== currentUserId
+        );
+        if (participant) {
+          otherUser = participant;
+        }
+      }
 
-      if (!receiver) {
+      if (!otherUser) {
         setError("Could not determine receiver for this conversation.");
         return;
       }
 
       const result = await messagesService.sendMessage({
         content,
-        receiver_id: receiver.id,
+        receiver_id: otherUser.id,
         listing_id: listingId,
         sender_id: currentUserId,
       });
@@ -189,19 +196,21 @@ export default function MessagesPage() {
                 (c) => c.id === selectedConversationId
               );
               let otherUser = { id: "", username: "Other User" };
+              const rawUserId = localStorage.getItem("userId");
+              const currentUserId = rawUserId ? rawUserId : "";
               if (conversation) {
-                const ownerParticipant = conversation.participants.find(
-                  (p) => p.id === conversation.listing_owner_id
+                const participant = conversation.participants.find(
+                  (p) => p.id !== currentUserId
                 );
-                if (ownerParticipant) {
-                  otherUser = ownerParticipant;
+                if (participant) {
+                  otherUser = participant;
                 }
               }
               return (
                 <ChatInterface
                   messages={messages}
                   onSendMessage={handleSendMessage}
-                  currentUserId={localStorage.getItem("userId") || ""}
+                  currentUserId={currentUserId}
                   otherUser={otherUser}
                 />
               );

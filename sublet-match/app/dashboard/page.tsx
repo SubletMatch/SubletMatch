@@ -401,12 +401,13 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-4">
                     {conversations.map((conversation) => {
-                      // Always show the listing owner's username
-                      const ownerParticipant = conversation.participants.find(
-                        (p) => p.id === conversation.listing_owner_id
+                      // Always show the other participant's username
+                      const currentUserId = localStorage.getItem("userId");
+                      const otherParticipant = conversation.participants.find(
+                        (p) => p.id !== currentUserId
                       );
 
-                      if (!ownerParticipant) return null;
+                      if (!otherParticipant) return null;
 
                       return (
                         <Card
@@ -422,12 +423,12 @@ export default function DashboardPage() {
                               <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                                   <span className="text-primary font-medium">
-                                    {ownerParticipant.username[0].toUpperCase()}
+                                    {otherParticipant.username[0].toUpperCase()}
                                   </span>
                                 </div>
                                 <div>
                                   <CardTitle className="text-base">
-                                    {ownerParticipant.username}
+                                    {otherParticipant.username}
                                   </CardTitle>
                                   <CardDescription>
                                     {conversation.listing_title ||
