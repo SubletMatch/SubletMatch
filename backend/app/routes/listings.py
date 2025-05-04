@@ -183,89 +183,58 @@ async def delete_listing(
     return {"message": "Listing deleted successfully"}
 
 @router.post("/{listing_id}/images", response_model=List[ListingImageSchema])
-async def upload_listing_images(
+async def upload_images(
     listing_id: str,
     images: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    bucket_name = "sublet-match-images"
+    s3 = boto3.client("s3")
+
     try:
-        # Verify listing exists and belongs to user
-        listing = db.query(Listing).filter(
-            Listing.id == listing_id,
-            Listing.user_id == current_user.id
-        ).first()
-        
+        # Verify listing ownership
+        listing = db.query(Listing).filter(Listing.id == listing_id).first()
         if not listing:
             raise HTTPException(status_code=404, detail="Listing not found")
+        if listing.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to upload images for this listing")
 
-        uploaded_images = []
-        # S3 Configuration
-        S3_BUCKET = "sublet-match-images"  # Replace with your actual bucket name
-
-        # Initialize S3 client
-        region = os.getenv("AWS_DEFAULT_REGION")
-        s3_client = boto3.client("s3", region_name=region) 
+        # Process each uploaded image
         for image in images:
-            # Generate unique filename
-            file_extension = image.filename.split('.')[-1].lower()
-            if file_extension not in ['jpg', 'jpeg', 'png', 'gif']:
-                raise HTTPException(status_code=400, detail="Invalid image format")
-            
-            # Generate unique filename
-            filename = f"{uuid.uuid4()}.{file_extension}"
-            
-            # Upload to S3
-            try:
-                
-                # Force correct MIME type using known extensions
-                file_extension = image.filename.split('.')[-1].lower()
-                if file_extension in ['jpg', 'jpeg']:
-                    content_type = 'image/jpeg'
-                elif file_extension == 'png':
-                    content_type = 'image/png'
-                elif file_extension == 'gif':
-                    content_type = 'image/gif'
-                else:
-                    raise HTTPException(status_code=400, detail="Unsupported image type")
+            extension = os.path.splitext(image.filename)[1]
+            unique_filename = f"{uuid.uuid4()}{extension}"
 
-                # Upload to S3 with explicit Content-Type
-                s3_client.upload_fileobj(
+            try:
+                s3.upload_fileobj(
                     image.file,
-                    S3_BUCKET,
-                    filename,
-                    ExtraArgs={
-                        'ContentType': content_type,
-                        'Metadata': {
-                            'Cache-Control': 'public,max-age=31536000'
-                        }
-                    }
+                    bucket_name,
+                    unique_filename,
+                    ExtraArgs={"ContentType": image.content_type}
                 )
 
+                image_url = f"https://{bucket_name}.s3.amazonaws.com/{unique_filename}"
 
-
-                # Create ListingImage record
-                image_url = f"https://{S3_BUCKET}.s3.{region}.amazonaws.com/{filename}"
                 db_image = ListingImage(
                     listing_id=listing_id,
                     image_url=image_url
                 )
                 db.add(db_image)
-                db.commit()
-                db.refresh(db_image)
-                uploaded_images.append(db_image)
-                
-            except NoCredentialsError:
-                raise HTTPException(status_code=500, detail="AWS credentials not configured")
-            except PartialCredentialsError:
-                raise HTTPException(status_code=500, detail="Incomplete AWS credentials")
-            except Exception as e:
-                logger.error(f"Error uploading image to S3: {str(e)}")
-                raise HTTPException(status_code=500, detail="Failed to upload image")
-        
-        return [ListingImageSchema.model_validate(img) for img in uploaded_images]
-    except Exception as e:
-        logger.error(f"Error uploading listing images: {str(e)}")
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
 
+            except Exception as e:
+                logger.error(f"Error uploading {image.filename}: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to upload image {image.filename}: {str(e)}"
+                )
+
+        db.commit()
+
+        return db.query(ListingImage).filter(ListingImage.listing_id == listing_id).all()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error uploading images: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while uploading images.")

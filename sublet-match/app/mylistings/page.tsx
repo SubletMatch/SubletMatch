@@ -23,6 +23,7 @@ import {
 import { format } from "date-fns";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 
 interface Listing {
   id: string;
@@ -125,11 +126,12 @@ export default function MyListingsPage() {
             <Card key={listing.id} className="overflow-hidden">
               {listing.images && listing.images.length > 0 && (
                 <>
-                  <div className="relative h-48">
-                    <img
+                  <div className="aspect-square relative">
+                    <Image
                       src={listing.images[0].image_url}
                       alt={listing.title}
-                      className="object-cover w-full h-full"
+                      className="object-contain object-center rounded-lg"
+                      fill
                     />
                   </div>
                 </>

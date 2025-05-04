@@ -31,8 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Image from "next/image";
 
-
+// List of US states
 const STATES = [
   "AL",
   "AK",
@@ -86,6 +87,7 @@ const STATES = [
   "WY",
 ];
 
+// List of property types
 const PROPERTY_TYPES = [
   "Apartment",
   "House",
@@ -203,22 +205,27 @@ export default function ListPage() {
   };
 
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    const newImages = [...images];
+    const newPreviews = [...imagePreviews];
+    
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    
+    setImages(newImages);
+    setImagePreviews(newPreviews);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
+  
     try {
       const token = authService.getToken();
       if (!token) {
         throw new Error("Not authenticated");
       }
-
-      // Create listing first
+  
       const listingData = {
         title: formData.title,
         description: formData.description,
@@ -231,40 +238,35 @@ export default function ListPage() {
         bathrooms: parseFloat(formData.bathrooms),
         available_from: new Date(date.from).toISOString(),
         available_to: new Date(date.to).toISOString(),
-        host: "Active", // Default host status
+        host: "Active",
       };
-      console.log("listingData", listingData)
-
-
-      const response = await fetch(
-        "http://localhost:8000/api/v1/listings/create",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(listingData),
-        }
-      );
-
+  
+      const response = await fetch("http://localhost:8000/api/v1/listings/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(listingData),
+      });
+  
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(JSON.stringify(errorData));
+        throw new Error(errorData.detail || "Failed to create listing");
       }
-
+  
       const listing = await response.json();
       console.log("Created listing:", listing);
-
+  
       // Upload images if any
       if (images.length > 0) {
         console.log("Uploading images:", images);
-
+  
         const formData = new FormData();
         images.forEach((file) => {
           formData.append("images", file);
         });
-
+  
         const imageResponse = await fetch(
           `http://localhost:8000/api/v1/listings/${listing.id}/images`,
           {
@@ -275,22 +277,26 @@ export default function ListPage() {
             body: formData,
           }
         );
-
+  
+        const imagesData = await imageResponse.json();
+  
         if (!imageResponse.ok) {
-          const errorData = await imageResponse.json();
-          console.error("Listing create error response:", errorData);
-          throw new Error(JSON.stringify(errorData)); 
+          toast({
+            title: "Upload Failed",
+            description: imagesData.detail || "Failed to upload images",
+            variant: "destructive",
+          });
+          throw new Error(imagesData.detail || "Image upload failed");
         }
-
-        const uploadedImages = await imageResponse.json();
-        console.log("Uploaded images:", uploadedImages);
+  
+        console.log("Images uploaded:", imagesData);
       }
-
+  
       toast({
         title: "Listing created!",
         description: "Your listing has been created successfully.",
       });
-
+  
       router.push("/dashboard");
     } catch (err: any) {
       console.error("Error creating listing:", err);
@@ -299,6 +305,7 @@ export default function ListPage() {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -504,8 +511,8 @@ export default function ListPage() {
 
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square group">
-                        <img src={preview} alt={`Preview ${index + 1}`} className="object-cover rounded-lg w-full h-full" />
+                      <div key={index} className="relative aspect-square w-full h-auto group">
+                        <Image src={preview} alt={`Preview ${index + 1}`} className="object-contain object-center rounded-lg" fill />
 
                         <button
                           type="button"

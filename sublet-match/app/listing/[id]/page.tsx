@@ -190,7 +190,7 @@ export default function ListingPage({
                     src={listing.images[currentImageIndex].image_url}
                     alt={`Image ${currentImageIndex + 1} of ${listing.title}`}
                     fill
-                    className="object-cover rounded-lg"
+                    className="object-contain object-center rounded-lg"
                     sizes="(max-width: 768px) 100vw, 66vw"
                     priority
                   />
