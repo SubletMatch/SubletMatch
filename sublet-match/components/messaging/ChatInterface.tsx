@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -24,6 +24,13 @@ export function ChatInterface({
   otherUser,
 }: ChatInterfaceProps) {
   const [newMessage, setNewMessage] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +124,7 @@ export function ChatInterface({
               </div>
             );
           })}
+          <div ref={scrollRef} />
         </div>
       </ScrollArea>
       <form onSubmit={handleSubmit} className="border-t p-4">
