@@ -9,7 +9,7 @@ import json
 
 from ..models.message import Message
 from ..schemas.message import MessageOut, MessageCreate, ConversationOut
-from ..database import get_db
+from ..core.database import get_db
 from ..models.user import User
 from ..models.listing import Listing
 

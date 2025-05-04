@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-from ..database import Base
+from ..core.database import Base
 
 class Message(Base):
     __tablename__ = "messages"
