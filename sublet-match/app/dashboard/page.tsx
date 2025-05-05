@@ -19,6 +19,7 @@ import {
   Bath,
   Calendar,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -41,6 +42,18 @@ import { listingService } from "@/lib/services/listing";
 import { useRouter } from "next/navigation";
 import { messagesService } from "@/lib/services/messages";
 import { Conversation } from "@/lib/services/messages";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Listing {
   id: string;
@@ -68,6 +81,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check for tab parameter in URL
@@ -92,9 +106,9 @@ export default function DashboardPage() {
       } catch (error: unknown) {
         console.error("Error fetching user data:", error);
         setError("Failed to load user data. Please try again.");
-        
+
         // Type guard to check if error is an AxiosError
-        if (error instanceof Error && 'response' in error) {
+        if (error instanceof Error && "response" in error) {
           const axiosError = error as { response?: { status?: number } };
           if (axiosError.response?.status === 401) {
             authService.logout();
@@ -114,7 +128,9 @@ export default function DashboardPage() {
         setListings(data);
       } catch (error: unknown) {
         console.error("Error fetching listings:", error);
-        setError(error instanceof Error ? error.message : "Failed to fetch listings");
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch listings"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -150,6 +166,27 @@ export default function DashboardPage() {
   const handleLogout = () => {
     authService.logout();
     router.push("/signin");
+  };
+
+  const handleDeleteListing = async (listingId: string) => {
+    try {
+      await listingService.deleteListing(listingId);
+      // Refresh listings after deletion
+      const updatedListings = listings.filter(
+        (listing) => listing.id !== listingId
+      );
+      setListings(updatedListings);
+      toast({
+        title: "Success",
+        description: "Listing deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete listing",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -300,93 +337,56 @@ export default function DashboardPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {listings.map((listing) => (
-                      <Card key={listing.id}>
-                        <div className="aspect-square relative">
+                      <Card key={listing.id} className="overflow-hidden">
+                        <div className="aspect-video relative">
                           <Image
                             src={
                               listing.images && listing.images.length > 0
                                 ? listing.images[0].image_url
-                                : ""
+                                : "/placeholder.svg"
                             }
                             alt={listing.title}
                             fill
-                            className="object-contain object-center rounded-lg"
+                            className="object-cover"
                           />
                         </div>
-                        <CardContent className="p-6 pb-2">
-                          <div className="flex justify-between items-start">
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
                             <div>
-                              <h3 className="text-lg font-semibold">
+                              <h3 className="text-lg font-semibold line-clamp-1">
                                 {listing.title}
                               </h3>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-muted-foreground line-clamp-1">
                                 {listing.address}, {listing.city},{" "}
                                 {listing.state}
                               </p>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center gap-2"
-                                onClick={() => {
-                                  console.log(
-                                    "Edit clicked for listing:",
-                                    listing.id
-                                  );
-                                  router.push(`/listing/${listing.id}/edit`);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  console.log(
-                                    "View clicked for listing:",
-                                    listing.id
-                                  );
-                                  router.push(`/listing/${listing.id}`);
-                                }}
-                              >
-                                View
-                              </Button>
+
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <span>${listing.price}/month</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-muted-foreground" />
+                                <span>{listing.property_type}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Bed className="h-4 w-4 text-muted-foreground" />
+                                <span>{listing.bedrooms} beds</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Bath className="h-4 w-4 text-muted-foreground" />
+                                <span>{listing.bathrooms} baths</span>
+                              </div>
                             </div>
-                          </div>
-                          {listing.images && listing.images.length > 0 && (
-                            <div className="relative h-48 mt-4">
-                              <img
-                                src={listing.images[0].image_url}
-                                alt={listing.title}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                          )}
-                          <div className="space-y-2 mt-4">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4" />
-                              <span>${listing.price}/month</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Building className="h-4 w-4" />
-                              <span>{listing.property_type}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Bed className="h-4 w-4" />
-                              <span>{listing.bedrooms} beds</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Bath className="h-4 w-4" />
-                              <span>{listing.bathrooms} baths</span>
-                            </div>
-                            <div className="flex items-center gap-2">
+
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Calendar className="h-4 w-4" />
                               <span>
                                 {format(
                                   new Date(listing.available_from),
-                                  "MMM d, yyyy"
+                                  "MMM d"
                                 )}{" "}
                                 -{" "}
                                 {format(
@@ -394,6 +394,65 @@ export default function DashboardPage() {
                                   "MMM d, yyyy"
                                 )}
                               </span>
+                            </div>
+
+                            <div className="flex gap-2 pt-2 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() =>
+                                  router.push(`/listing/${listing.id}/edit`)
+                                }
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() =>
+                                  router.push(`/listing/${listing.id}`)
+                                }
+                              >
+                                View
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Are you sure?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will
+                                      permanently delete your listing.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        handleDeleteListing(listing.id)
+                                      }
+                                      className="bg-red-500 hover:bg-red-600"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </div>
                         </CardContent>

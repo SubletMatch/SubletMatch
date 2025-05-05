@@ -1,32 +1,45 @@
-import { listingService } from "@/lib/services/listing";
+"use client";
+
 import { EditListingForm } from "@/components/edit-listing-form";
+import { listingService } from "@/lib/services/listing";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
-interface PageParams {
-  id: string;
-}
+export default function EditListingPage() {
+  const params = useParams();
+  const [listing, setListing] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function EditListingPage({
-  params,
-}: {
-  params: PageParams;
-}) {
-  const listingId = params.id;
+  useEffect(() => {
+    const fetchListing = async () => {
+      try {
+        if (params?.id) {
+          const data = await listingService.getListing(params.id as string);
+          setListing(data);
+        }
+      } catch (err) {
+        setError("Failed to load listing");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  try {
-    const listing = await listingService.getListing(listingId);
-    return (
-      <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-8">Edit Listing</h1>
-        <EditListingForm listing={listing} />
-      </div>
-    );
-  } catch (error) {
-    console.error("Error fetching listing:", error);
-    return (
-      <div className="container py-8">
-        <div className="text-center text-red-500">Failed to load listing</div>
-      </div>
-    );
+    fetchListing();
+  }, [params?.id]);
+
+  if (loading) {
+    return <div>Loading...</div>;
   }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  if (!listing) {
+    return <div>Listing not found</div>;
+  }
+
+  return <EditListingForm listing={listing} />;
 }
- 

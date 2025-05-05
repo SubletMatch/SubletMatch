@@ -86,14 +86,11 @@ export default function ListingPage({
       if (!listingId) return;
 
       try {
-        const response = await fetch(
-          `${API_URL}/listings/${listingId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${authService.getToken()}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/listings/${listingId}`, {
+          headers: {
+            Authorization: `Bearer ${authService.getToken()}`,
+          },
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch listing");
@@ -245,43 +242,66 @@ export default function ListingPage({
             <div className="lg:col-span-2">
               <div className="relative overflow-hidden rounded-xl mb-6">
                 <div className="aspect-video relative">
-                  <Image
-                    src={listing.images[currentImageIndex]?.image_url}
-                    alt={`Image ${currentImageIndex + 1} of ${listing.title}`}
-                    fill
-                    className="object-contain object-center rounded-lg"
-                    sizes="(max-width: 768px) 100vw, 66vw"
-                    priority
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background/90 rounded-full"
-                    onClick={handlePrevImage}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background/90 rounded-full"
-                    onClick={handleNextImage}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </div>
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
-                  {listing.images.map((image) => (
-                    <div key={image.image_url} className="relative aspect-square">
-                      <Image
-                        src={image.image_url}
-                        alt={`Listing image ${image.image_url}`}
-                        fill
-                        className="object-cover rounded-lg"
-                      />
+                  {listing.images && listing.images.length > 0 ? (
+                    <Image
+                      src={
+                        listing.images[currentImageIndex]?.image_url ||
+                        "/placeholder.svg"
+                      }
+                      alt={`Image ${currentImageIndex + 1} of ${listing.title}`}
+                      fill
+                      className="object-contain object-center rounded-lg"
+                      sizes="(max-width: 768px) 100vw, 66vw"
+                      priority
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center rounded-lg">
+                      <Building className="h-12 w-12 text-muted-foreground" />
                     </div>
-                  ))}
+                  )}
+                  {listing.images && listing.images.length > 1 && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background/90 rounded-full"
+                        onClick={handlePrevImage}
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background/90 rounded-full"
+                        onClick={handleNextImage}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                    </>
+                  )}
                 </div>
+                {listing.images && listing.images.length > 1 && (
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1">
+                    {listing.images.map((image, index) => (
+                      <div
+                        key={image.image_url}
+                        className={`relative aspect-square w-16 cursor-pointer rounded-lg overflow-hidden ${
+                          index === currentImageIndex
+                            ? "ring-2 ring-primary"
+                            : ""
+                        }`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      >
+                        <Image
+                          src={image.image_url || "/placeholder.svg"}
+                          alt={`Thumbnail ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">

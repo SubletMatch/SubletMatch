@@ -82,23 +82,42 @@ export class ListingService {
     return response.json();
   }
 
-  async deleteListing(id: string) {
-    const token = authService.getToken();
-    if (!token) {
-      throw new Error("Not authenticated");
-    }
-
-    const response = await fetch(`${this.baseUrl}/listings/${id}`, {
+  async deleteListing(listingId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/listings/${listingId}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${authService.getToken()}`,
       },
     });
+
     if (!response.ok) {
-      throw new Error("Failed to delete listing");
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to delete listing");
     }
+  }
+
+  async deleteListingImage(listingId: string, imageId: string) {
+    const token = authService.getToken();
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await fetch(
+      `${this.baseUrl}/listings/${listingId}/images/${imageId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to delete image");
+    }
+
+    return response.json();
   }
 }
 
 export const listingService = new ListingService();
- 
