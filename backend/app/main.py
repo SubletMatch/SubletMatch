@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import auth, listings, message
+from .routes import auth, listings, message, health
 from .core.database import engine, Base
 
 # Create database tables
@@ -20,6 +20,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(message.router, prefix="/api/v1/messages", tags=['messages'])
 
