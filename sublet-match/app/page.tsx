@@ -21,23 +21,23 @@ export default function Home() {
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link
-              href="/find"
+              href="/signin"
               className="text-sm font-medium hover:text-primary"
             >
               Find a Sublet
             </Link>
             <Link
-              href="/list"
+              href="/signin"
               className="text-sm font-medium hover:text-primary"
             >
               List Your Sublet
             </Link>
-            <Link
+            {/* <Link
               href="/how-it-works"
               className="text-sm font-medium hover:text-primary"
             >
               How It Works
-            </Link>
+            </Link> */}
           </nav>
           <div className="flex items-center gap-4">
             <Link href="/signin">
@@ -66,13 +66,13 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/list">
+                  <Link href="/signin">
                     <Button size="lg" className="w-full">
                       List Your Sublet
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/find">
+                  <Link href="/signin">
                     <Button size="lg" variant="outline" className="w-full">
                       Find a Sublet
                       <Search className="ml-2 h-4 w-4" />
@@ -152,35 +152,43 @@ export default function Home() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 py-8">
               {[1, 2, 3].map((i) => (
-                <Link href={`/listing/${i}`} key={i} className="group">
+                <Link href="/signin" key={i} className="group">
                   <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
                     <div className="aspect-video w-full overflow-hidden">
                       <img
-                        alt={`Apartment ${i}`}
+                        alt={`Featured Property ${i}`}
                         className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                        src={`/placeholder.svg?height=300&width=500&text=Apartment ${i}`}
+                        src={
+                          i === 1
+                            ? "/ovation_madison.jpg"
+                            : i === 2
+                            ? "/Parkline_miami.jpg"
+                            : "/college_apt.jpg"
+                        }
                       />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-lg">
-                        Cozy Studio in Downtown
+                      <h3 className="font-semibold">
+                        {i === 1
+                          ? "Ovation Madison"
+                          : i === 2
+                          ? "Parkline Miami"
+                          : "College Apartment"}
                       </h3>
-                      <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span className="text-sm">New York, NY</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span className="text-sm">Jun 1 - Aug 31</span>
-                      </div>
-                      <div className="mt-3 font-medium">$1,200/month</div>
+                      <p className="text-sm text-muted-foreground">
+                        {i === 1
+                          ? "Luxury living in Madison"
+                          : i === 2
+                          ? "Modern apartments in Miami"
+                          : "Perfect for students"}
+                      </p>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
             <div className="flex justify-center mt-8">
-              <Link href="/find">
+              <Link href="/signin">
                 <Button variant="outline" size="lg">
                   View All Listings
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -196,7 +204,7 @@ export default function Home() {
                 <img
                   alt="Happy subletter"
                   className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center"
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/happy_subletter.jpg?height=400&width=600"
                 />
               </div>
               <div className="flex flex-col justify-center space-y-4">
@@ -210,13 +218,13 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/list">
+                  <Link href="/signin">
                     <Button size="lg" className="w-full">
                       List Your Sublet
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/find">
+                  <Link href="/signin">
                     <Button size="lg" variant="outline" className="w-full">
                       Find a Sublet
                       <Search className="ml-2 h-4 w-4" />
