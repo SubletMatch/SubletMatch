@@ -17,7 +17,7 @@ export default function Home() {
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <Building className="h-6 w-6 text-primary" />
-            <span>SubletMatch</span>
+            <span>LeaseLink</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link
@@ -96,7 +96,7 @@ export default function Home() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  How SubletMatch Works
+                  How LeaseLink Works
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
                   Our platform makes it easy to list or find a sublet for your
@@ -240,10 +240,10 @@ export default function Home() {
         <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
           <div className="flex items-center gap-2 text-sm">
             <Building className="h-5 w-5 text-primary" />
-            <p className="font-medium">SubletMatch</p>
+            <p className="font-medium">LeaseLink</p>
           </div>
           <p className="text-center text-sm text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} SubletMatch. All rights reserved.
+            &copy; {new Date().getFullYear()} LeaseLink. All rights reserved.
           </p>
           <div className="flex gap-4">
             <Link
