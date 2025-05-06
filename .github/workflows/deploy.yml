@@ -23,6 +23,7 @@ jobs:
             source venv/bin/activate
             pip install -r backend/requirements.txt
             sudo systemctl restart backend
+            cd ~/SubletMatch/sublet-match
             npm install
             npm run build
             sudo systemctl restart frontend
