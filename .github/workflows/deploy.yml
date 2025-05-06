@@ -4,12 +4,10 @@ on:
   push:
     branches:
       - main
-      - actions-work
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
@@ -23,4 +21,10 @@ jobs:
             git pull origin main
             source venv/bin/activate
             pip install -r backend/requirements.txt
-            sudo systemctl restart myapp
+            sudo systemctl restart backend
+            cd ~/SubletMatch/sublet-match
+            npm install
+            npm run build
+            sudo systemctl restart frontend
+
+
