@@ -11,7 +11,7 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://www.leaselink.app"],  # Frontend URL
+    allow_origins=["http://localhost:3000", "https://www.leaselink.app", "https://leaselink.app"], 
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
