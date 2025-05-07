@@ -17,6 +17,10 @@ export function Map({ address }: MapProps) {
     async function fetchCoordinates() {
       try {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          setError("Location not found");
+          return;
+        }
         const response = await fetch(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
             address
@@ -36,14 +40,18 @@ export function Map({ address }: MapProps) {
     fetchCoordinates();
   }, [address]);
 
-  if (error) return <div>{error}</div>;
-  if (!center) return <div>Loading map...</div>;
+  if (error) return <div className="text-muted-foreground">{error}</div>;
+  if (!center)
+    return <div className="text-muted-foreground">Loading map...</div>;
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return <div className="text-muted-foreground">Location not found</div>;
+  }
 
   return (
     <div className="aspect-video rounded-md overflow-hidden">
-      <LoadScript
-        googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""}
-      >
+      <LoadScript googleMapsApiKey={apiKey}>
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "100%" }}
           center={center}
