@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str
     AWS_ACCESS_KEY_ID: str
     AWS_DEFAULT_REGION: str
+    SENDGRID_API_KEY: str
+    SENDGRID_FROM_EMAIL: str
+    FRONTEND_URL: str
 
     class Config:
         env_file = ".env"
