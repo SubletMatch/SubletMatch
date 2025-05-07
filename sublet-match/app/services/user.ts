@@ -25,5 +25,18 @@ export const userService = {
       throw error;
     }
   },
+  async updateProfile(token: string, data: { name: string; email: string }) {
+    try {
+      const response = await axios.put(`${API_URL}/auth/me`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    }
+  },
 };
- 
