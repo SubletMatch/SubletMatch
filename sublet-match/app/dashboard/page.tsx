@@ -54,7 +54,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
-import KeyManager from "@/components/key_manager";
+// import KeyManager from "@/components/key_manager";
 
 
 
@@ -228,7 +228,6 @@ export default function DashboardPage() {
 
   return (
     <>
-    {userId && <KeyManager userId={userId} />}
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
