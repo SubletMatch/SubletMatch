@@ -104,38 +104,49 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3">
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
-                <div className="rounded-full bg-primary/10 p-4">
-                  <Building className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">List Your Space</h3>
-                <p className="text-center text-muted-foreground">
-                  Create a detailed listing with photos, pricing, and
-                  availability dates.
-                </p>
+            <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-3">
+              {/* Card 1 - List Your Space */}
+              <div className="h-full">
+                <Link href="/signin?redirect=listings" className="h-full">
+                  <div className="flex h-full flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm hover:shadow-md transition cursor-pointer">
+                    <div className="rounded-full bg-primary/10 p-4">
+                      <Building className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold">List Your Space</h3>
+                    <p className="text-center text-muted-foreground">
+                      Create a detailed listing with photos, pricing, and availability dates.
+                    </p>
+                  </div>
+                </Link>
               </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
-                <div className="rounded-full bg-primary/10 p-4">
-                  <Search className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">Find a Sublet</h3>
-                <p className="text-center text-muted-foreground">
-                  Browse available sublets with filters for location, dates, and
-                  budget.
-                </p>
+
+              {/* Card 2 - Find a Sublet */}
+              <div className="h-full">
+                <Link href="/signin?redirect=find" className="h-full">
+                  <div className="flex h-full flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm hover:shadow-md transition cursor-pointer">
+                    <div className="rounded-full bg-primary/10 p-4">
+                      <Search className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold">Find a Sublet</h3>
+                    <p className="text-center text-muted-foreground">
+                      Browse available sublets with filters for location, dates, and budget.
+                    </p>
+                  </div>
+                </Link>
               </div>
+
+              {/* Card 3 - Connect Securely (static) */}
               <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
                 <div className="rounded-full bg-primary/10 p-4">
                   <Shield className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-bold">Connect Securely</h3>
                 <p className="text-center text-muted-foreground">
-                  Message potential sublessors or subletters directly through
-                  our platform.
+                  Message potential sublessors or subletters directly through our platform.
                 </p>
               </div>
             </div>
+
           </div>
         </section>
         <section className="py-12 md:py-24 bg-muted">
