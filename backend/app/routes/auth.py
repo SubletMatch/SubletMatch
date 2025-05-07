@@ -7,6 +7,8 @@ from ..auth.utils import verify_password, get_password_hash, create_access_token
 from datetime import timedelta
 from ..core.config import settings
 from pydantic import BaseModel, EmailStr
+from ..services.email import send_welcome_email
+import logging
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
@@ -47,6 +49,12 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    # Send welcome email (do not block signup if it fails)
+    try:
+        send_welcome_email(user.email, user.name)
+    except Exception as e:
+        logging.error(f"Failed to send welcome email to {user.email}: {e}")
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
