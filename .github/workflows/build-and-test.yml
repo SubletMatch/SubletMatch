@@ -1,0 +1,38 @@
+name: Build and Test SubletMatch
+
+on:
+  workflow_dispatch:
+  pull_request:      
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up backend (Python)
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          echo "✅ Backend dependencies installed"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Set up frontend (React / Next.js)
+        run: |
+          cd sublet-match
+          npm install
+          npm run build
+          echo "✅ Frontend built successfully"
