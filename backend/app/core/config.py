@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     AWS_DEFAULT_REGION: str
     SENDGRID_API_KEY: str
     SENDGRID_FROM_EMAIL: str
-    FRONTEND_URL: str
+    # FRONTEND_URL: str  # Removed, not needed
 
     class Config:
         env_file = ".env"
