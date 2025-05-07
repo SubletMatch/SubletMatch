@@ -18,3 +18,4 @@ class User(Base):
     listings = relationship("Listing", back_populates="user")
     sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
     received_messages = relationship("Message", foreign_keys="Message.receiver_id", back_populates="receiver") 
+    public_key = relationship("PublicKey", back_populates="user", uselist=False)
