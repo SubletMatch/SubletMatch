@@ -388,7 +388,9 @@ export default function ListingPage({
                         {listing.address}, {listing.city}, {listing.state}
                       </span>
                     </div>
-                    <Map city={listing.city} state={listing.state} />
+                    <Map
+                      address={`${listing.address}, ${listing.city}, ${listing.state}`}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
