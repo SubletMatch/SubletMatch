@@ -145,7 +145,7 @@ export default function FindPage() {
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <Building className="h-6 w-6 text-primary" />
-            <span>SubletMatch</span>
+            <span>LeaseLink</span>
           </Link>
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
