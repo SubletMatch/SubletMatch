@@ -346,15 +346,14 @@ export default function FindPage() {
                       className="group"
                     >
                     <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                      <div className="aspect-video w-full overflow-hidden">
+                      <div className="aspect-video relative">
                           {listing.images && listing.images.length > 0 ? (
                             <Image
-                              src={`${API_URL}${listing.images[0].image_url}`}
-                          alt={listing.title}
-                              width={500}
-                              height={300}
-                          className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                        />
+                              src={listing.images[0].image_url}
+                              alt={listing.title}
+                              fill
+                              className="object-cover"
+                            />
                           ) : (
                             <div className="w-full h-full bg-muted flex items-center justify-center">
                               <Building className="h-8 w-8 text-muted-foreground" />
