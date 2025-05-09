@@ -67,16 +67,42 @@ export class ListingService {
       throw new Error("Not authenticated");
     }
 
+    console.log("Update listing request:");
+    console.log("Listing ID:", id);
+    console.log("Data type:", typeof data);
+    console.log("Data instanceof FormData:", data instanceof FormData);
+
+    // Capture FormData contents before processing
+    const formDataKeys = Array.from(data.keys());
+    const formDataEntries: Array<[string, string | File]> = Array.from(data.entries());
+    console.log("Captured FormData keys:", formDataKeys);
+    console.log("Captured FormData entries:", formDataEntries);
+
+    // If it's FormData, try to read its contents
+    if (data instanceof FormData) {
+      console.log("FormData entries:");
+      // Use the captured entries instead of directly from FormData
+      for (const [key, value] of formDataEntries) {       
+         console.log(`Key: ${key}, Value: ${value instanceof File ? value.name : value}`);
+      }
+    } else {
+      console.log("Data content:", data);
+    }
+
     const response = await fetch(`${this.baseUrl}/listings/${id}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: data,
     });
+
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
+
     if (!response.ok) {
       const error = await response.json();
+      console.error("Error response:", error);
       throw new Error(error.detail || "Failed to update listing");
     }
     return response.json();

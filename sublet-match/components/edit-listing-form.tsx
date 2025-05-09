@@ -77,23 +77,49 @@ export function EditListingForm({ listing }: EditListingFormProps) {
   const handleSubmit = async (formData: Record<string, string | number>) => {
     try {
       setIsLoading(true);
+      console.log("Form data received:", formData);
+      
       const formDataToSend = new FormData();
 
       // Add all existing form fields
+      console.log("Adding form fields to FormData:");
       Object.entries(formData).forEach(([key, value]) => {
+        console.log(`Adding field: ${key} = ${value}`);
         formDataToSend.append(key, String(value));
       });
 
       // Add new images
-      newImages.forEach((file) => {
+      console.log("Adding new images:", newImages);
+      newImages.forEach((file, index) => {
+        console.log(`Adding image ${index}:`, file.name);
         formDataToSend.append("images", file);
       });
 
       // Add existing image URLs
-      images.forEach((image) => {
+      console.log("Adding existing images:", images);
+      images.forEach((image, index) => {
+        console.log(`Adding existing image ${index}:`, image.image_url);
         formDataToSend.append("existing_images", image.image_url);
       });
 
+      // Log FormData contents
+      const formDataEntries: Record<string, any> = {};
+      const formDataKeys = Array.from(formDataToSend.keys());
+      console.log("FormData keys:", formDataKeys);
+
+      formDataToSend.forEach((value, key) => {
+        if (value instanceof File) {
+          formDataEntries[key] = value.name; // For file objects, log the filename
+        } else {
+          formDataEntries[key] = value;
+        }
+      });
+      console.log("Final FormData contents:", formDataEntries);
+
+      // Log the raw FormData object
+      console.log("Raw FormData object:", formDataToSend);
+
+      console.log("Sending update request...");
       await listingService.updateListing(listing.id, formDataToSend);
       toast.success("Listing updated successfully");
       router.push("/dashboard");
