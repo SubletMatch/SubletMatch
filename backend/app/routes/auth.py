@@ -7,11 +7,17 @@ from ..auth.utils import verify_password, get_password_hash, create_access_token
 from datetime import timedelta
 from ..core.config import settings
 from pydantic import BaseModel, EmailStr
-from ..services.email import send_welcome_email
+from ..services.email import send_welcome_email, send_password_reset_email
 import logging
+import secrets
+from datetime import datetime
+from fastapi import Body
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
+
+# In-memory store for reset tokens (for demo; use DB or cache in production)
+reset_tokens = {}
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -30,6 +36,13 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 @router.post("/signup", response_model=Token)
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
@@ -89,4 +102,31 @@ async def get_current_user_info(
         "email": current_user.email,
         "name": current_user.name,
         "created_at": current_user.created_at.isoformat()
-    } 
+    }
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        # For security, do not reveal if user exists
+        return {"message": "If that email exists, a reset link has been sent."}
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    # Store token with expiry (1 hour)
+    reset_tokens[token] = {"user_id": str(user.id), "expires": datetime.utcnow() + timedelta(hours=1)}
+    send_password_reset_email(user.email, token)
+    return {"message": "If that email exists, a reset link has been sent."}
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    token_data = reset_tokens.get(data.token)
+    if not token_data or token_data["expires"] < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    user = db.query(User).filter(User.id == token_data["user_id"]).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+    user.password_hash = get_password_hash(data.new_password)
+    db.commit()
+    # Invalidate token
+    del reset_tokens[data.token]
+    return {"message": "Password reset successful"} 

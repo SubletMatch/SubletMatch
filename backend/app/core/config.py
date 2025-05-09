@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     LOCAL_DB: str
     LOCAL_USER: str
     LOCAL_PASSWORD: str
+    FRONTEND_URL: str
 
     class Config:
         env_file = ".env"
