@@ -591,24 +591,6 @@ export default function DashboardPage() {
                           Edit Profile
                         </Button>
                       </div>
-                      <Separator />
-                      <div className="space-y-2">
-                        <h3 className="font-medium">
-                          Notification Preferences
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Manage how and when you receive notifications.
-                        </p>
-                        <Button variant="outline">Manage Notifications</Button>
-                      </div>
-                      <Separator />
-                      <div className="space-y-2">
-                        <h3 className="font-medium">Payment Methods</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Add or remove payment methods for your account.
-                        </p>
-                        <Button variant="outline">Manage Payments</Button>
-                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
