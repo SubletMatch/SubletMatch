@@ -31,6 +31,10 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class UserUpdate(BaseModel):
+    name: str
+    email: EmailStr
+
 @router.post("/signup", response_model=Token)
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
@@ -89,4 +93,21 @@ async def get_current_user_info(
         "email": current_user.email,
         "name": current_user.name,
         "created_at": current_user.created_at.isoformat()
-    } 
+    }
+
+@router.put("/me")
+async def update_current_user(
+    update: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Check if email is changing and already taken
+    if update.email != current_user.email:
+        existing = db.query(User).filter(User.email == update.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+    current_user.name = update.name
+    current_user.email = update.email
+    db.commit()
+    db.refresh(current_user)
+    return {"message": "Profile updated"} 
