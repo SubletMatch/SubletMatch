@@ -584,7 +584,12 @@ export default function DashboardPage() {
                           Your profile information is used to identify you on
                           the platform.
                         </p>
-                        <Button variant="outline">Edit Profile</Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push("/dashboard/settings")}
+                        >
+                          Edit Profile
+                        </Button>
                       </div>
                       <Separator />
                       <div className="space-y-2">
