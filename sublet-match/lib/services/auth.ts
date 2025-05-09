@@ -1,5 +1,5 @@
 // This is a placeholder service that will be implemented when the backend is ready
-export const authService = {  
+export const authService = {
   async signIn(email: string, password: string) {
     try {
       const formData = new FormData();

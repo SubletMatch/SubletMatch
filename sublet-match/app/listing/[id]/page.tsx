@@ -75,6 +75,7 @@ export default function ListingPage({
   const [listingId, setListingId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const fromFind = searchParams.get("from") === "find";
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const resolvedParams = use(params);
   const id = resolvedParams.id;
@@ -116,6 +117,10 @@ export default function ListingPage({
       router.push("/signin");
     }
   }, [router, listingId]);
+
+  useEffect(() => {
+    setIsAuthenticated(authService.isAuthenticated());
+  }, []);
 
   const handlePrevImage = () => {
     if (!listing?.images) return;
@@ -217,10 +222,31 @@ export default function ListingPage({
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <span
+            className="flex items-center gap-2 font-bold text-xl cursor-pointer"
+            onClick={() => {
+              if (isAuthenticated) {
+                router.push("/dashboard");
+              } else {
+                router.push("/");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                if (isAuthenticated) {
+                  router.push("/dashboard");
+                } else {
+                  router.push("/");
+                }
+              }
+            }}
+            aria-label="LeaseLink Home or Dashboard"
+          >
             <Building className="h-6 w-6 text-primary" />
             <span>LeaseLink</span>
-          </Link>
+          </span>
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">
