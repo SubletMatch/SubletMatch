@@ -36,6 +36,10 @@ import { authService } from "@/lib/services/auth";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+function normalizeLocation(loc: string) {
+  return loc.replace(/\s*,\s*/g, ", ").trim();
+}
+
 export default function FindPage() {
   const [priceRange, setPriceRange] = useState([500, 3000]);
   const [showFilters, setShowFilters] = useState(false);
@@ -73,9 +77,13 @@ export default function FindPage() {
     fetchListings();
   }, []);
 
-  // Get unique locations from listings
+  // Get unique locations from listings (normalized)
   const locations = Array.from(
-    new Set(listings.map((listing) => `${listing.city}, ${listing.state}`))
+    new Set(
+      listings.map((listing) =>
+        normalizeLocation(`${listing.city}, ${listing.state}`)
+      )
+    )
   );
 
   const applyFilters = () => {
@@ -83,10 +91,9 @@ export default function FindPage() {
 
     // Apply location filter
     if (location !== "any") {
-      filtered = filtered.filter((listing) =>
-        `${listing.city}, ${listing.state}`
-          .toLowerCase()
-          .includes(location.toLowerCase())
+      filtered = filtered.filter(
+        (listing) =>
+          normalizeLocation(`${listing.city}, ${listing.state}`) === location
       );
     }
 
@@ -109,6 +116,10 @@ export default function FindPage() {
     if (bedrooms !== "any") {
       if (bedrooms === "studio") {
         filtered = filtered.filter((listing) => listing.bedrooms === 0);
+      } else if (bedrooms === "3") {
+        filtered = filtered.filter((listing) => listing.bedrooms === 3);
+      } else if (bedrooms === "3+") {
+        filtered = filtered.filter((listing) => listing.bedrooms >= 3);
       } else {
         filtered = filtered.filter(
           (listing) => listing.bedrooms === parseInt(bedrooms)
@@ -295,7 +306,8 @@ export default function FindPage() {
                           <SelectItem value="studio">Studio</SelectItem>
                           <SelectItem value="1">1</SelectItem>
                           <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3">3+</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="3+">3+</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
