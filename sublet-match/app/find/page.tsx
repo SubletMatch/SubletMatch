@@ -149,7 +149,7 @@ export default function FindPage() {
           </Link>
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
-            <Link href="/dashboard">
+              <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
                   Dashboard
                 </Button>
@@ -157,13 +157,13 @@ export default function FindPage() {
             ) : (
               <>
                 <Link href="/signin">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
                 <Link href="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
+                  <Button size="sm">Sign Up</Button>
+                </Link>
               </>
             )}
           </div>
@@ -338,15 +338,15 @@ export default function FindPage() {
                   No listings found. Try adjusting your filters.
                 </div>
               ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredListings.map((listing) => (
                     <Link
-                      href={`/listing/${listing.id}`}
+                      href={`/listing/${listing.id}?from=find`}
                       key={listing.id}
                       className="group"
                     >
-                    <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                      <div className="aspect-video relative">
+                      <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
+                        <div className="aspect-video relative">
                           {listing.images && listing.images.length > 0 ? (
                             <Image
                               src={listing.images[0].image_url}
@@ -359,19 +359,19 @@ export default function FindPage() {
                               <Building className="h-8 w-8 text-muted-foreground" />
                             </div>
                           )}
-                      </div>
-                      <div className="p-4">
+                        </div>
+                        <div className="p-4">
                           <h3 className="font-semibold text-lg">
                             {listing.title}
                           </h3>
-                        <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
+                          <div className="flex items-center gap-2 mt-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
                             <span className="text-sm">
                               {listing.city}, {listing.state}
                             </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
                             <span className="text-sm">
                               {new Date(
                                 listing.available_from
@@ -381,15 +381,15 @@ export default function FindPage() {
                                 listing.available_to
                               ).toLocaleDateString()}
                             </span>
-                        </div>
+                          </div>
                           <div className="mt-3 font-medium">
                             ${listing.price}/month
                           </div>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                    </Link>
+                  ))}
+                </div>
               )}
             </div>
           </div>
