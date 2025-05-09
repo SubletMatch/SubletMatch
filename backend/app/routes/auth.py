@@ -37,12 +37,19 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+
+class UserUpdate(BaseModel):
+    name: str
+    email: EmailStr
+
 
 @router.post("/signup", response_model=Token)
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
@@ -104,6 +111,7 @@ async def get_current_user_info(
         "created_at": current_user.created_at.isoformat()
     }
 
+
 @router.post("/forgot-password")
 async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
@@ -130,3 +138,20 @@ async def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_d
     # Invalidate token
     del reset_tokens[data.token]
     return {"message": "Password reset successful"} 
+
+@router.put("/me")
+async def update_current_user(
+    update: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Check if email is changing and already taken
+    if update.email != current_user.email:
+        existing = db.query(User).filter(User.email == update.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+    current_user.name = update.name
+    current_user.email = update.email
+    db.commit()
+    db.refresh(current_user)
+    return {"message": "Profile updated"} 

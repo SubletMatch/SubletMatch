@@ -154,7 +154,7 @@ export default function MessagesPage() {
   };
 
   const handleBackClick = () => {
-    router.back();
+    router.push("/dashboard?tab=messages");
   };
 
   if (isLoading) {
