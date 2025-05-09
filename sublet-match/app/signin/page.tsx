@@ -88,6 +88,14 @@ export default function SignIn() {
                 required
               />
             </div>
+            <div className="flex justify-end">
+              <Link
+                href="/reset-password"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
             {error && <div className="text-red-500 text-sm">{error}</div>}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
