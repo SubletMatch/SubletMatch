@@ -23,8 +23,26 @@ jobs:
             pip install -r backend/requirements.txt
             sudo systemctl restart backend
             cd ~/SubletMatch/sublet-match
-            npm install
-            npm run build
+            echo "📦 Installing frontend dependencies..."
+            npm install &
+            NPM_PID=$!
+            while kill -0 $NPM_PID 2>/dev/null; do
+              echo "--- Memory usage during npm install ---"
+              free -h
+              sleep 3
+            done
+            wait $NPM_PID
+
+            echo "🛠️ Building frontend..."
+            npm run build &
+            BUILD_PID=$!
+            while kill -0 $BUILD_PID 2>/dev/null; do
+              echo "--- Memory usage during npm build ---"
+              free -h
+              sleep 3
+            done
+            wait $BUILD_PID
             sudo systemctl restart frontend
+
 
 

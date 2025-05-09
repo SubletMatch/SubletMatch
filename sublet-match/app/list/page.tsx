@@ -32,6 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
+import Link from "next/link"; // make sure this is at the top
+
 
 // List of US states
 const STATES = [
@@ -318,7 +320,9 @@ export default function ListPage() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl">
             <Building className="h-6 w-6 text-primary" />
-            <span>SubletMatch</span>
+            <Link href="/dashboard">
+              <span className="cursor-pointer">LeaseLink</span>
+            </Link>
           </div>
         </div>
       </header>

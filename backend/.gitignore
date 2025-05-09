@@ -21,7 +21,7 @@ wheels/
 *.egg
 
 # Virtual Environment
-venv/
+venv*/
 ENV/
 env/
 
@@ -47,3 +47,9 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+prod_dump.dump 
+prod_dump.sql
+clean_prod_dump.sql
+
+
