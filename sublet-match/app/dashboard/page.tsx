@@ -202,6 +202,15 @@ export default function DashboardPage() {
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "listings") {
+      router.push("/dashboard");
+    } else {
+      router.push(`/dashboard?tab=${tab}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container py-8">
@@ -259,7 +268,7 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   className="justify-start"
-                  onClick={() => setActiveTab("listings")}
+                  onClick={() => handleTabChange("listings")}
                 >
                   <Home className="mr-2 h-4 w-4" />
                   My Listings
@@ -267,7 +276,7 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   className="justify-start"
-                  onClick={() => setActiveTab("find")}
+                  onClick={() => handleTabChange("find")}
                 >
                   <Search className="mr-2 h-4 w-4" />
                   Find Listings
@@ -275,7 +284,7 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   className="justify-start"
-                  onClick={() => setActiveTab("messages")}
+                  onClick={() => handleTabChange("messages")}
                 >
                   <Inbox className="mr-2 h-4 w-4" />
                   Messages
@@ -289,7 +298,7 @@ export default function DashboardPage() {
                 <Button
                   variant="ghost"
                   className="justify-start"
-                  onClick={() => setActiveTab("settings")}
+                  onClick={() => handleTabChange("settings")}
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
@@ -301,7 +310,7 @@ export default function DashboardPage() {
             <div className="container py-8">
               <Tabs
                 value={activeTab}
-                onValueChange={setActiveTab}
+                onValueChange={handleTabChange}
                 className="space-y-6"
               >
                 <div className="flex items-center justify-between">
