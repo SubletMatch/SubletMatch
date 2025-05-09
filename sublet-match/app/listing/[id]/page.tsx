@@ -17,6 +17,7 @@ import {
   User,
 } from "lucide-react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { Map } from "@/components/map";
 import { userService } from "@/app/services/user";
 import { messagesService } from "@/lib/services/messages";
+import { useRef } from "react";
 
 interface Listing {
   id: string;
@@ -71,6 +73,8 @@ export default function ListingPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [listingId, setListingId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const fromFind = searchParams.get("from") === "find";
 
   const resolvedParams = use(params);
   const id = resolvedParams.id;
@@ -229,13 +233,20 @@ export default function ListingPage({
       <main className="flex-1">
         <div className="container py-8">
           <div className="flex items-center mb-6">
-            <Link
-              href="/dashboard"
-              className="flex items-center text-muted-foreground hover:text-foreground"
+            <Button
+              variant="link"
+              className="flex items-center text-muted-foreground hover:text-foreground p-0"
+              onClick={() => {
+                if (fromFind) {
+                  router.push("/find");
+                } else {
+                  router.push("/dashboard");
+                }
+              }}
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
-              Back to My Listings
-            </Link>
+              Back
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
