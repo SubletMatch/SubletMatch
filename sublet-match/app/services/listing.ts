@@ -177,7 +177,7 @@ class ListingService {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${this.baseUrl}/listings`, {
+      const response = await fetch(`${this.baseUrl}/listings/`, {
         method: "GET",
         headers,
       });
