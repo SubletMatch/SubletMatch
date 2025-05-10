@@ -31,9 +31,7 @@ interface EditListingFormProps {
 
 export function EditListingForm({ listing }: EditListingFormProps) {
   const router = useRouter();
-  const [images, setImages] = useState<{ id: string; image_url: string }[]>(
-    listing.images || []
-  );
+  const [images, setImages] = useState(listing.images || []);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,45 +78,44 @@ export function EditListingForm({ listing }: EditListingFormProps) {
       console.log("Form data received:", formData);
       
       const formDataToSend = new FormData();
-
+  
       // Add all existing form fields
       console.log("Adding form fields to FormData:");
       Object.entries(formData).forEach(([key, value]) => {
         console.log(`Adding field: ${key} = ${value}`);
         formDataToSend.append(key, String(value));
       });
-
+  
       // Add new images
       console.log("Adding new images:", newImages);
       newImages.forEach((file, index) => {
         console.log(`Adding image ${index}:`, file.name);
         formDataToSend.append("images", file);
       });
-
+  
       // Add existing image URLs
       console.log("Adding existing images:", images);
       images.forEach((image, index) => {
         console.log(`Adding existing image ${index}:`, image.image_url);
         formDataToSend.append("existing_images", image.image_url);
       });
-
+  
       // Log FormData contents
       const formDataEntries: Record<string, any> = {};
       const formDataKeys = Array.from(formDataToSend.keys());
       console.log("FormData keys:", formDataKeys);
-
+  
       formDataToSend.forEach((value, key) => {
         if (value instanceof File) {
-          formDataEntries[key] = value.name; // For file objects, log the filename
+          formDataEntries[key] = value.name;
         } else {
           formDataEntries[key] = value;
         }
       });
+  
       console.log("Final FormData contents:", formDataEntries);
-
-      // Log the raw FormData object
       console.log("Raw FormData object:", formDataToSend);
-
+  
       console.log("Sending update request...");
       await listingService.updateListing(listing.id, formDataToSend);
       toast.success("Listing updated successfully");
@@ -129,99 +126,94 @@ export function EditListingForm({ listing }: EditListingFormProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   return (
     <div className="space-y-8">
-      <div className="space-y-8">
-        <ListingForm
-          listing={listing}
-          onSubmit={handleSubmit}
-          showButtons={false}
-        />
+      <ListingForm
+        listing={listing}
+        onSubmit={handleSubmit}
+        showButtons={false}
+      />
 
-        <div className="bg-card rounded-lg border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold">Listing Images</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Add or remove images for your listing
-              </p>
-            </div>
-            <label className="relative inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors cursor-pointer">
-              <ImagePlus className="h-4 w-4" />
-              <span>Add Images</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleImageChange}
+      <div className="bg-card rounded-lg border p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold">Listing Images</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Add or remove images for your listing
+            </p>
+          </div>
+          <label className="relative inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors cursor-pointer">
+            <ImagePlus className="h-4 w-4" />
+            <span>Add Images</span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleImageChange}
+            />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {images.map((image, index) => (
+            <div
+              key={image.image_url}
+              className="relative aspect-square group rounded-lg overflow-hidden border"
+            >
+              <Image
+                src={image.image_url}
+                alt={`Listing image ${index + 1}`}
+                fill
+                className="object-cover"
               />
-            </label>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* Existing Images */}
-            {images.map((image, index) => (
-              <div
-                key={image.image_url}
-                className="relative aspect-square group rounded-lg overflow-hidden border"
-              >
-                <Image
-                  src={image.image_url}
-                  alt={`Listing image ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index, true)}
-                    className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => removeImage(index, true)}
+                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
               </div>
-            ))}
+            </div>
+          ))}
 
-            {/* New Image Previews */}
-            {previewUrls.map((url, index) => (
-              <div
-                key={url}
-                className="relative aspect-square group rounded-lg overflow-hidden border"
-              >
-                <Image
-                  src={url}
-                  alt={`New image ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index, false)}
-                    className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
+          {previewUrls.map((url, index) => (
+            <div
+              key={url}
+              className="relative aspect-square group rounded-lg overflow-hidden border"
+            >
+              <Image
+                src={url}
+                alt={`New image ${index + 1}`}
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => removeImage(index, false)}
+                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
               </div>
-            ))}
+            </div>
+          ))}
 
-            {/* Empty state when no images */}
-            {images.length === 0 && previewUrls.length === 0 && (
-              <div className="col-span-full aspect-[2/1] border-2 border-dashed rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <ImagePlus className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    No images added yet
-                  </p>
-                </div>
+          {images.length === 0 && previewUrls.length === 0 && (
+            <div className="col-span-full aspect-[2/1] border-2 border-dashed rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <ImagePlus className="h-12 w-12 mx-auto text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No images added yet
+                </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
