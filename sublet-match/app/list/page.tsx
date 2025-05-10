@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { authService } from "@/lib/services/auth";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast"; 
 import {
   Select,
   SelectContent,
@@ -25,7 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import Link from "next/link"; // make sure this is at the top
+import { Loader2 } from "lucide-react";
+
+// Constants for image validation
+const MAX_IMAGE_SIZE_MB = 5; // Maximum file size in MB
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
 
 // List of US states
 const STATES = [
@@ -108,6 +113,7 @@ export default function ListPage() {
   const [propertyType, setPropertyType] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [loadedStates, setLoadedStates] = useState<boolean[]>([]);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     title: "",
@@ -140,77 +146,129 @@ export default function ListPage() {
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const heic2any = (await import("heic2any")).default;
+
     if (!e.target.files) return;
 
     const newFiles = Array.from(e.target.files);
-    const previews: string[] = [];
-    const accepted: File[] = [];
-
+    const oversizedFiles: string[] = [];
+    const validFiles: File[] = [];
+    
+    // First validate all files for size
     for (const file of newFiles) {
-      // ✅ Isolate only imageCompression
-      const bufferReader = new FileReader();
-      bufferReader.onloadend = () => {
-        const buffer = new Uint8Array(bufferReader.result as ArrayBuffer);
-        const sig = buffer.slice(0, 4);
-        console.log(
-          `🧪 File: ${file.name}, type: ${file.type}, signature:`,
-          Array.from(sig).map((b) => b.toString(16).toUpperCase())
-        );
-        // Should print: ['FF', 'D8', 'FF', 'E0'] or something similar
-      };
-      bufferReader.readAsArrayBuffer(file);
-
-      // ✅ Now proceed with compression and preview logic
-      let compressed: File = file;
-
-      try {
-        compressed = await imageCompression(file, {
-          maxSizeMB: 2.5, // Allow larger file
-          maxWidthOrHeight: 2400, // Retain more detail
-          initialQuality: 0.95, // Preserve quality
-        });
-      } catch (compressionError) {
-        console.warn("Compression error:", compressionError);
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        oversizedFiles.push(file.name);
+      } else {
+        validFiles.push(file);
       }
-
+    }
+    
+    // Show error message for oversized files
+    if (oversizedFiles.length > 0) {
+      console.error(`Files too large: ${oversizedFiles.join(", ")}`);
+      
+      const errorMessage = `${oversizedFiles.length} image(s) exceed the ${MAX_IMAGE_SIZE_MB}MB limit and were skipped.`;
+      
+      // Display toast notification
+      toast({
+        title: "Images too large",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // If all files are oversized, exit early
+      if (validFiles.length === 0) return;
+    }
+    
+    // Add new image placeholders
+    const newIndices = Array(validFiles.length).fill(0).map((_, i) => imagePreviews.length + i);
+    setLoadedStates(prev => [...prev, ...Array(validFiles.length).fill(true)]);
+    setImagePreviews(prev => [...prev, ...Array(validFiles.length).fill("")]);
+    setImages(prev => [...prev, ...Array(validFiles.length).fill(null)]);
+    
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      const index = imagePreviews.length + i - oversizedFiles.length;
+      
       try {
-        const reader = new FileReader();
-
-        reader.onloadend = () => {
-          const result = reader.result;
-          if (typeof result === "string" && result.startsWith("data:image/")) {
-            previews.push(result);
-            accepted.push(file);
-
-            if (previews.length === newFiles.length) {
-              setImagePreviews((prev) => [...prev, ...previews]);
-              setImages((prev) => [...prev, ...accepted]);
-            }
-          } else {
-            console.warn("⚠️ Invalid preview string:", result);
-          }
-        };
-
-        reader.onerror = (readerError) => {
-          console.error("❌ FileReader failed:", readerError);
-        };
-
-        reader.readAsDataURL(compressed);
-      } catch (readerCrash) {
-        console.error("❌ Unexpected readAsDataURL crash:", readerCrash);
+        let workingFile = file;
+  
+        // Convert HEIC to JPEG if needed
+        if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+          const heic2any = (await import("heic2any")).default; // ✅ dynamic import avoids server crash
+          const buffer = await file.arrayBuffer();
+          const jpegBlob = await heic2any({
+            blob: new Blob([buffer]),
+            toType: "image/jpeg",
+            quality: 0.9,
+          });
+        
+          workingFile = new File(
+            [jpegBlob as BlobPart],
+            file.name.replace(/\.heic$/i, ".jpg"),
+            { type: "image/jpeg" }
+          );
+        }
+        
+  
+        // Compress image
+        const compressed = await imageCompression(workingFile, {
+          maxSizeMB: 1.5,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        });
+  
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(compressed);
+  
+        // Update states
+        setImages(prev => {
+          const newImages = [...prev];
+          newImages[index] = compressed;
+          return newImages;
+        });
+        
+        setImagePreviews(prev => {
+          const newPreviews = [...prev];
+          newPreviews[index] = previewUrl;
+          return newPreviews;
+        });
+        
+        setLoadedStates(prev => {
+          const newStates = [...prev];
+          newStates[index] = false;
+          return newStates;
+        });
+      } catch (err) {
+        console.warn("Failed to process image:", file.name, err);
+        removeImage(index);
       }
     }
   };
-
+  
   const removeImage = (index: number) => {
-    const newImages = [...images];
-    const newPreviews = [...imagePreviews];
-
-    newImages.splice(index, 1);
-    newPreviews.splice(index, 1);
-
-    setImages(newImages);
-    setImagePreviews(newPreviews);
+    // Clean up object URL if it exists to prevent memory leaks
+    if (imagePreviews[index]) {
+      URL.revokeObjectURL(imagePreviews[index]);
+    }
+    
+    setImages(prev => {
+      const newImages = [...prev];
+      newImages.splice(index, 1);
+      return newImages;
+    });
+    
+    setImagePreviews(prev => {
+      const newPreviews = [...prev];
+      newPreviews.splice(index, 1);
+      return newPreviews;
+    });
+    
+    setLoadedStates(prev => {
+      const newStates = [...prev];
+      newStates.splice(index, 1);
+      return newStates;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -544,27 +602,56 @@ export default function ListPage() {
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div
-                        key={index}
-                        className="relative aspect-square w-full h-auto group"
-                      >
+                  {imagePreviews.map((preview, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-square w-full h-auto group overflow-hidden rounded-lg"
+                    >
+                      {/* Spinner shown until loaded AND preview URL exists */}
+                      {(loadedStates[index] || !preview) && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted/20">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+
+                      {/* Image only rendered after preload AND when preview URL exists */}
+                      {!loadedStates[index] && preview && (
                         <Image
                           src={preview}
                           alt={`Preview ${index + 1}`}
-                          className="object-contain object-center rounded-lg"
                           fill
+                          className="object-contain object-center rounded-lg transition-opacity duration-500 opacity-100"
                         />
+                      )}
 
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+                      {/* Preload if preview URL exists */}
+                      {loadedStates[index] && preview && (
+                        <img
+                          src={preview}
+                          alt=""
+                          className="hidden"
+                          onLoad={() =>
+                            setLoadedStates((prev) => {
+                              const copy = [...prev];
+                              copy[index] = false;
+                              return copy;
+                            })
+                          }
+                        />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 z-20 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                   
+
 
                     {imagePreviews.length < 10 && (
                       <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">

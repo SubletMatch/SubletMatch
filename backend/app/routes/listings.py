@@ -335,6 +335,7 @@ async def upload_images(
         for image in images:
             extension = os.path.splitext(image.filename)[1]
             unique_filename = f"{uuid.uuid4()}{extension}"
+            
 
             try:
                 s3.upload_fileobj(
