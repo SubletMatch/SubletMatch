@@ -38,7 +38,7 @@ app.include_router(public_key.router, prefix="/api/v1/keys", tags=["keys"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to SubletMatch API"}
+    return {"message": "Welcome to LeaseLink API"}
 
 # 👇 ADD THIS to enable running with `uvicorn app.main:app`
 if __name__ == "__main__":
