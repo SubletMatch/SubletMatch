@@ -37,7 +37,7 @@ import heic2any from "heic2any";
 import { Loader2 } from "lucide-react";
 
 // Constants for image validation
-const MAX_IMAGE_SIZE_MB = 8; // Maximum file size in MB
+const MAX_IMAGE_SIZE_MB = 5; // Maximum file size in MB
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 
 
