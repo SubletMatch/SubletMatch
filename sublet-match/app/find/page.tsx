@@ -435,10 +435,10 @@ export default function FindPage() {
         <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
           <div className="flex items-center gap-2 text-sm">
             <Building className="h-5 w-5 text-primary" />
-            <p className="font-medium">SubletMatch</p>
+            <p className="font-medium">LeaseLink</p>
           </div>
           <p className="text-center text-sm text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} SubletMatch. All rights reserved.
+            &copy; {new Date().getFullYear()} LeasLink. All rights reserved.
           </p>
         </div>
       </footer>

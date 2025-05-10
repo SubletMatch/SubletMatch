@@ -1,9 +1,9 @@
 "use client";
 
-import { EditListingForm } from "@/components/edit-listing-form";
-import { listingService } from "@/lib/services/listing";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { listingService } from "@/lib/services/listing";
+import { EditListingForm } from "@/components/edit-listing-form";
 
 export default function EditListingPage() {
   const params = useParams();
@@ -29,17 +29,9 @@ export default function EditListingPage() {
     fetchListing();
   }, [params?.id]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (!listing) {
-    return <div>Listing not found</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!listing) return <div>Listing not found</div>;
 
   return <EditListingForm listing={listing} />;
 }
