@@ -262,7 +262,7 @@ export function EditListingForm({ listing }: EditListingFormProps) {
       setIsLoading(false);
       console.log("--- Save Process Finished ---");
     }
-  };  
+  };
 
   return (
     <div className="space-y-8">
