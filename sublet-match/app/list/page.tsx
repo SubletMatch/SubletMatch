@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Building,
-  DollarSign,
-  Bed,
-  Bath,
-  ImagePlus,
-  X,
-} from "lucide-react";
+import { Building, DollarSign, Bed, Bath, ImagePlus, X } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 import Link from "next/link"; // make sure this is at the top
-
 
 // List of US states
 const STATES = [
@@ -127,9 +119,11 @@ export default function ListPage() {
     bathrooms: "",
   });
   const [amenities, setAmenities] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated
+    setIsAuthenticated(authService.isAuthenticated());
     if (!authService.isAuthenticated()) {
       router.push("/signin");
     }
@@ -147,13 +141,12 @@ export default function ListPage() {
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-  
+
     const newFiles = Array.from(e.target.files);
     const previews: string[] = [];
     const accepted: File[] = [];
-  
-    for (const file of newFiles) {
 
+    for (const file of newFiles) {
       // ✅ Isolate only imageCompression
       const bufferReader = new FileReader();
       bufferReader.onloadend = () => {
@@ -166,30 +159,29 @@ export default function ListPage() {
         // Should print: ['FF', 'D8', 'FF', 'E0'] or something similar
       };
       bufferReader.readAsArrayBuffer(file);
-      
+
       // ✅ Now proceed with compression and preview logic
       let compressed: File = file;
-    
+
       try {
         compressed = await imageCompression(file, {
-          maxSizeMB: 2.5,              // Allow larger file
-          maxWidthOrHeight: 2400,      // Retain more detail
-          initialQuality: 0.95,        // Preserve quality
+          maxSizeMB: 2.5, // Allow larger file
+          maxWidthOrHeight: 2400, // Retain more detail
+          initialQuality: 0.95, // Preserve quality
         });
-        
       } catch (compressionError) {
         console.warn("Compression error:", compressionError);
       }
-  
+
       try {
         const reader = new FileReader();
-  
+
         reader.onloadend = () => {
           const result = reader.result;
           if (typeof result === "string" && result.startsWith("data:image/")) {
             previews.push(result);
             accepted.push(file);
-  
+
             if (previews.length === newFiles.length) {
               setImagePreviews((prev) => [...prev, ...previews]);
               setImages((prev) => [...prev, ...accepted]);
@@ -198,11 +190,11 @@ export default function ListPage() {
             console.warn("⚠️ Invalid preview string:", result);
           }
         };
-  
+
         reader.onerror = (readerError) => {
           console.error("❌ FileReader failed:", readerError);
         };
-  
+
         reader.readAsDataURL(compressed);
       } catch (readerCrash) {
         console.error("❌ Unexpected readAsDataURL crash:", readerCrash);
@@ -213,10 +205,10 @@ export default function ListPage() {
   const removeImage = (index: number) => {
     const newImages = [...images];
     const newPreviews = [...imagePreviews];
-    
+
     newImages.splice(index, 1);
     newPreviews.splice(index, 1);
-    
+
     setImages(newImages);
     setImagePreviews(newPreviews);
   };
@@ -225,13 +217,13 @@ export default function ListPage() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-  
+
     try {
       const token = authService.getToken();
       if (!token) {
         throw new Error("Not authenticated");
       }
-  
+
       const listingData = {
         title: formData.title,
         description: formData.description,
@@ -247,7 +239,7 @@ export default function ListPage() {
         host: "Active", // Default host status
         amenities: amenities,
       };
-  
+
       const response = await fetch(`${API_URL}/listings/create`, {
         method: "POST",
         headers: {
@@ -256,24 +248,24 @@ export default function ListPage() {
         },
         body: JSON.stringify(listingData),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to create listing");
       }
-  
+
       const listing = await response.json();
       console.log("Created listing:", listing);
-  
+
       // Upload images if any
       if (images.length > 0) {
         console.log("Uploading images:", images);
-  
+
         const formData = new FormData();
         images.forEach((file) => {
           formData.append("images", file);
         });
-  
+
         const imageResponse = await fetch(
           `${API_URL}/listings/${listing.id}/images`,
           {
@@ -284,9 +276,9 @@ export default function ListPage() {
             body: formData,
           }
         );
-  
+
         const imagesData = await imageResponse.json();
-  
+
         if (!imageResponse.ok) {
           toast({
             title: "Upload Failed",
@@ -295,15 +287,15 @@ export default function ListPage() {
           });
           throw new Error(imagesData.detail || "Image upload failed");
         }
-  
+
         console.log("Images uploaded:", imagesData);
       }
-  
+
       toast({
         title: "Listing created!",
         description: "Your listing has been created successfully.",
       });
-  
+
       router.push("/dashboard");
     } catch (err: any) {
       console.error("Error creating listing:", err);
@@ -312,18 +304,36 @@ export default function ListPage() {
       setIsLoading(false);
     }
   };
-  
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
+          <span
+            className="flex items-center gap-2 font-bold text-xl cursor-pointer"
+            onClick={() => {
+              if (isAuthenticated) {
+                router.push("/dashboard");
+              } else {
+                router.push("/");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                if (isAuthenticated) {
+                  router.push("/dashboard");
+                } else {
+                  router.push("/");
+                }
+              }
+            }}
+            aria-label="LeaseLink Home or Dashboard"
+          >
             <Building className="h-6 w-6 text-primary" />
-            <Link href="/dashboard">
-              <span className="cursor-pointer">LeaseLink</span>
-            </Link>
-          </div>
+            <span>LeaseLink</span>
+          </span>
         </div>
       </header>
       <main className="flex-1">
@@ -535,8 +545,16 @@ export default function ListPage() {
 
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square w-full h-auto group">
-                        <Image src={preview} alt={`Preview ${index + 1}`} className="object-contain object-center rounded-lg" fill />
+                      <div
+                        key={index}
+                        className="relative aspect-square w-full h-auto group"
+                      >
+                        <Image
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="object-contain object-center rounded-lg"
+                          fill
+                        />
 
                         <button
                           type="button"

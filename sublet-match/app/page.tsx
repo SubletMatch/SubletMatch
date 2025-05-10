@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -7,18 +9,49 @@ import {
   Search,
   Shield,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/lib/services/auth";
 
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsAuthenticated(!!authService.getToken());
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <span
+            className="flex items-center gap-2 font-bold text-xl cursor-pointer"
+            onClick={() => {
+              if (isAuthenticated) {
+                router.push("/dashboard");
+              } else {
+                router.push("/");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                if (isAuthenticated) {
+                  router.push("/dashboard");
+                } else {
+                  router.push("/");
+                }
+              }
+            }}
+            aria-label="LeaseLink Home or Dashboard"
+          >
             <Building className="h-6 w-6 text-primary" />
             <span>LeaseLink</span>
-          </Link>
+          </span>
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/signin"
@@ -114,7 +147,8 @@ export default function Home() {
                     </div>
                     <h3 className="text-xl font-bold">List Your Space</h3>
                     <p className="text-center text-muted-foreground">
-                      Create a detailed listing with photos, pricing, and availability dates.
+                      Create a detailed listing with photos, pricing, and
+                      availability dates.
                     </p>
                   </div>
                 </Link>
@@ -129,7 +163,8 @@ export default function Home() {
                     </div>
                     <h3 className="text-xl font-bold">Find a Sublet</h3>
                     <p className="text-center text-muted-foreground">
-                      Browse available sublets with filters for location, dates, and budget.
+                      Browse available sublets with filters for location, dates,
+                      and budget.
                     </p>
                   </div>
                 </Link>
@@ -142,11 +177,11 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">Connect Securely</h3>
                 <p className="text-center text-muted-foreground">
-                  Message potential sublessors or subletters directly through our platform.
+                  Message potential sublessors or subletters directly through
+                  our platform.
                 </p>
               </div>
             </div>
-
           </div>
         </section>
         <section className="py-12 md:py-24 bg-muted">

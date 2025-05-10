@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -185,7 +185,7 @@ async def get_listing(
 @router.put("/{listing_id}", response_model=ListingResponse)
 async def update_listing(
     listing_id: str,
-    listing_update: ListingUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -195,18 +195,50 @@ async def update_listing(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Listing not found"
         )
+    
+    # Log initial description
+
+    # print(f"Initial desription: {db_listing.description}")
+    
     if db_listing.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this listing"
         )
+
+    # Log raw request body
+    print(f"Raw request body: {request.body()}")
+
+    # Log form data
+    form_data = await request.form()
+    print(f"Form data keys: {form_data.keys()}")
+
+    # Log each field
+    for field in form_data:
+        value = form_data[field]
+        print(f"Field: {field}, Value: {value}")
+        if hasattr(value, 'filename'):
+            print(f"File field: {field}, Filename: {value.filename}")
+
+    # Convert form data to dict
+    update_data = {k: v for k, v in form_data.items() if k != 'images'}
+    print(f"Update data after form conversion: {update_data}")
     
-    update_data = listing_update.model_dump(exclude_unset=True)
+    # Log description in update data if present
+    if 'description' in update_data:
+        print(f"Description in update data: {update_data['description']}")
+    
     for field, value in update_data.items():
         setattr(db_listing, field, value)
     
+    # Log final description after update
+    print(f"Final description after update: {db_listing.description}")
+    
     db.commit()
     db.refresh(db_listing)
+    
+    # Log description after commit
+    print(f"Final description after commit: {db_listing.description}")
 
     # Get the listing images
     images = db.query(ListingImage).filter(ListingImage.listing_id == listing_id).all()
