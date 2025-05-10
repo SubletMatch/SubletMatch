@@ -25,8 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
-import Link from "next/link"; // make sure this is at the top
-import heic2any from "heic2any";
 import { Loader2 } from "lucide-react";
 
 // Constants for image validation
@@ -148,6 +146,8 @@ export default function ListPage() {
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const heic2any = (await import("heic2any")).default;
+
     if (!e.target.files) return;
 
     const newFiles = Array.from(e.target.files);
@@ -186,7 +186,6 @@ export default function ListPage() {
     setImagePreviews(prev => [...prev, ...Array(validFiles.length).fill("")]);
     setImages(prev => [...prev, ...Array(validFiles.length).fill(null)]);
     
-    // Process each valid file
     for (let i = 0; i < validFiles.length; i++) {
       const file = validFiles[i];
       const index = imagePreviews.length + i - oversizedFiles.length;
@@ -196,19 +195,21 @@ export default function ListPage() {
   
         // Convert HEIC to JPEG if needed
         if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+          const heic2any = (await import("heic2any")).default; // ✅ dynamic import avoids server crash
           const buffer = await file.arrayBuffer();
           const jpegBlob = await heic2any({
             blob: new Blob([buffer]),
             toType: "image/jpeg",
             quality: 0.9,
           });
-  
+        
           workingFile = new File(
             [jpegBlob as BlobPart],
             file.name.replace(/\.heic$/i, ".jpg"),
             { type: "image/jpeg" }
           );
         }
+        
   
         // Compress image
         const compressed = await imageCompression(workingFile, {
