@@ -6,9 +6,18 @@ import { authService } from "@/lib/services/auth";
 import { listingService } from "@/lib/services/listing";
 import { ListingForm } from "@/components/listing-form";
 import { toast } from "sonner";
-import { ImagePlus, Trash2 } from "lucide-react";
+import { ImagePlus, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import imageCompression from "browser-image-compression";
+let heic2any: any = null;
+if (typeof window !== "undefined") {
+  import("heic2any")
+    .then((module) => {
+      heic2any = module.default;
+    })
+    .catch((err) => console.error("Failed to load heic2any:", err));
+}
 
 interface EditListingFormProps {
   listing: {
@@ -29,6 +38,10 @@ interface EditListingFormProps {
   };
 }
 
+const MAX_IMAGES_TOTAL = 10;
+const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
 export function EditListingForm({ listing }: EditListingFormProps) {
   const router = useRouter();
   const [images, setImages] = useState(listing.images || []);
@@ -42,12 +55,64 @@ export function EditListingForm({ listing }: EditListingFormProps) {
     }
   }, [router]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setNewImages((prev) => [...prev, ...files]);
-      const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
+    if (files.length === 0) return;
+
+    if (images.length + files.length > MAX_IMAGES_TOTAL) {
+      toast.error(`Maximum ${MAX_IMAGES_TOTAL} images allowed`);
+      return;
+    }
+
+    try {
+      const processedFiles = await Promise.all(
+        files.map(async (file) => {
+          // Check file size
+          if (file.size > MAX_IMAGE_SIZE_BYTES) {
+            throw new Error(
+              `File ${file.name} is too large. Maximum size is ${MAX_IMAGE_SIZE_MB}MB`
+            );
+          }
+
+          // Handle HEIC/HEIF files
+          if (file.type === "image/heic" || file.type === "image/heif") {
+            if (!heic2any) {
+              throw new Error("HEIC/HEIF conversion not available");
+            }
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.8,
+            });
+            return new File(
+              [convertedBlob],
+              file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+              {
+                type: "image/jpeg",
+              }
+            );
+          }
+
+          // Compress other image types
+          const compressedFile = await imageCompression(file, {
+            maxSizeMB: MAX_IMAGE_SIZE_MB,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          });
+
+          return new File([compressedFile], file.name, {
+            type: file.type,
+          });
+        })
+      );
+
+      setNewImages((prev) => [...prev, ...processedFiles]);
+      const newPreviewUrls = processedFiles.map((file) =>
+        URL.createObjectURL(file)
+      );
       setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+    } catch (error: any) {
+      toast.error(error.message || "Error processing images");
     }
   };
 
@@ -76,48 +141,31 @@ export function EditListingForm({ listing }: EditListingFormProps) {
     try {
       setIsLoading(true);
       console.log("Form data received:", formData);
-      
+
+      // Build FormData for updateListing
       const formDataToSend = new FormData();
-  
-      // Add all existing form fields
-      console.log("Adding form fields to FormData:");
       Object.entries(formData).forEach(([key, value]) => {
-        console.log(`Adding field: ${key} = ${value}`);
         formDataToSend.append(key, String(value));
       });
-  
-      // Add new images
-      console.log("Adding new images:", newImages);
-      newImages.forEach((file, index) => {
-        console.log(`Adding image ${index}:`, file.name);
-        formDataToSend.append("images", file);
-      });
-  
-      // Add existing image URLs
-      console.log("Adding existing images:", images);
-      images.forEach((image, index) => {
-        console.log(`Adding existing image ${index}:`, image.image_url);
-        formDataToSend.append("existing_images", image.image_url);
-      });
-  
-      // Log FormData contents
-      const formDataEntries: Record<string, any> = {};
-      const formDataKeys = Array.from(formDataToSend.keys());
-      console.log("FormData keys:", formDataKeys);
-  
-      formDataToSend.forEach((value, key) => {
-        if (value instanceof File) {
-          formDataEntries[key] = value.name;
-        } else {
-          formDataEntries[key] = value;
-        }
-      });
-  
-      console.log("Final FormData contents:", formDataEntries);
-      console.log("Raw FormData object:", formDataToSend);
-  
-      console.log("Sending update request...");
+      if (newImages.length > 0) {
+        newImages.forEach((file) => {
+          formDataToSend.append("images", file);
+        });
+      }
+
+      // Call updateListing with FormData
       await listingService.updateListing(listing.id, formDataToSend);
+
+      // Delete removed images
+      const currentImageIds = new Set(images.map((img) => img.id));
+      const originalImageIds = new Set(listing.images.map((img) => img.id));
+      const removedImageIds = Array.from(originalImageIds).filter(
+        (id) => !currentImageIds.has(id)
+      );
+      for (const imageId of removedImageIds) {
+        await listingService.deleteListingImage(listing.id, imageId);
+      }
+
       toast.success("Listing updated successfully");
       router.push("/dashboard");
     } catch (error) {
@@ -126,7 +174,7 @@ export function EditListingForm({ listing }: EditListingFormProps) {
     } finally {
       setIsLoading(false);
     }
-  };  
+  };
 
   return (
     <div className="space-y-8">
@@ -141,18 +189,29 @@ export function EditListingForm({ listing }: EditListingFormProps) {
           <div>
             <h3 className="text-lg font-semibold">Listing Images</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Add or remove images for your listing
+              Add or remove images (max {MAX_IMAGES_TOTAL} total,{" "}
+              {MAX_IMAGE_SIZE_MB}MB per image)
             </p>
           </div>
-          <label className="relative inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors cursor-pointer">
+          <label
+            className={`relative inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors ${
+              isLoading || images.length + newImages.length >= MAX_IMAGES_TOTAL
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
+          >
             <ImagePlus className="h-4 w-4" />
             <span>Add Images</span>
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               multiple
               className="hidden"
               onChange={handleImageChange}
+              disabled={
+                isLoading ||
+                images.length + newImages.length >= MAX_IMAGES_TOTAL
+              }
             />
           </label>
         </div>
