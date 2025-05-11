@@ -127,13 +127,15 @@ export default function ListPage() {
   const [amenities, setAmenities] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+
   useEffect(() => {
-    // Check if user is authenticated
-    setIsAuthenticated(authService.isAuthenticated());
-    if (!authService.isAuthenticated()) {
+    const auth = authService.isAuthenticated();
+    setIsAuthenticated(auth);
+    if (!auth) {
       router.push("/signin");
     }
   }, [router]);
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
