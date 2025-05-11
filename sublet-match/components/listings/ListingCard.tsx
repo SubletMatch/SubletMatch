@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { deleteListing } from "@/services/listingService";
+import { listingService } from "@/lib/services/listing";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,7 @@ export function ListingCard({
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await deleteListing(listing.id);
+      await listingService.deleteListing(listing.id);
       toast({
         title: "Success",
         description: "Listing deleted successfully",
