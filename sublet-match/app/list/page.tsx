@@ -148,7 +148,6 @@ export default function ListPage() {
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const heic2any = (await import("heic2any")).default;
 
     if (!e.target.files) return;
 
