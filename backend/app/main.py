@@ -36,6 +36,22 @@ app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"]
 app.include_router(message.router, prefix="/api/v1/messages", tags=['messages'])
 app.include_router(public_key.router, prefix="/api/v1/keys", tags=["keys"])
 
+from fastapi.routing import APIRoute
+
+@app.get("/debug/messages-routes")
+def debug_routes():
+    return [
+        {
+            "path": route.path,
+            "methods": list(route.methods),
+            "name": route.name
+        }
+        for route in app.routes
+        if isinstance(route, APIRoute)
+    ]
+
+
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to LeaseLink API"}

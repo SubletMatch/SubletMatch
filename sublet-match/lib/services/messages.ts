@@ -41,7 +41,7 @@ export const messagesService = {
 
       console.log("Sending message with data:", data);
 
-      const response = await fetch(`${API_BASE_URL}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/messages/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,7 +156,7 @@ export const messagesService = {
       if (!userId) {
         throw new Error("No user ID found in localStorage");
       }
-      const response = await fetch(`${API_BASE_URL}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/messages/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
