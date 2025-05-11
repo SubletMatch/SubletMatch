@@ -44,5 +44,8 @@ jobs:
             wait $BUILD_PID
             sudo systemctl restart frontend
 
+            echo "🔁 Restarting Nginx to apply new routes and clear cache"
+            sudo systemctl restart nginx
+
 
 
