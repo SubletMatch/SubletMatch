@@ -12,6 +12,9 @@ import logging
 import secrets
 from datetime import datetime
 from fastapi import Body
+from ..models.verification_token import VerificationToken
+from ..services.email import send_verification_email
+
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
@@ -69,6 +72,17 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=1)
+    db_token = VerificationToken(
+        user_id=str(db_user.id),
+        token=token,
+        expires_at=expires
+    )
+    db.add(db_token)
+    db.commit()
+    send_verification_email(user.email, user.name, token)
+ 
 
     # Send welcome email (do not block signup if it fails)
     try:
@@ -92,6 +106,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email not verified",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

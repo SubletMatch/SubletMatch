@@ -15,6 +15,7 @@ import { useState } from "react";
 import { authService } from "@/lib/services/auth";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,7 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +41,14 @@ export default function SignUp() {
         setError(result.error);
       } else {
         // Redirect to signin page after successful signup
-        router.push("/signin");
+        toast({
+          title: "Verification Email Sent",
+          description: "Check your email to verify your account. Redirecting to home in 3 seconds...",
+          duration: 3000,
+        });
+        setTimeout(() => {
+          router.push("/");
+        }, 3000);
       }
     } catch (err) {
       setError("An error occurred. Please try again.");

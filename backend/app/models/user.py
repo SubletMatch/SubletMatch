@@ -13,6 +13,8 @@ class User(Base):
     name = Column(String)
     password_hash = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_verified = Column(Boolean, default=False, nullable=False)
+
 
     # Relationships
     listings = relationship("Listing", back_populates="user")
