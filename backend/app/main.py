@@ -10,10 +10,24 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+ENV = os.getenv("APP_ENV")
+
+if ENV == "dev":
+    allowed_origins = [
+        "http://localhost:3000",
+        "https://dev.leaselink.app",
+        "https://www.dev.leaselink.app",
+    ]
+else:
+    allowed_origins = [
+        "https://leaselink.app",
+        "https://www.leaselink.app",
+    ]
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://www.leaselink.app", "https://leaselink.app"], 
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
