@@ -1,8 +1,8 @@
-name: Deploy to EC2
+name: Deploy to EC2 Dev
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   deploy:
@@ -11,17 +11,17 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.EC2_HOST_DEV }}
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_DEV }}
           script: |
             echo "🚀 Starting deployment process..."
             cd /home/ec2-user/SubletMatch  # Ensure we are in the main project directory
 
             echo "🔄 Updating repository..."
             git stash # Stash any untracked/local changes on the server
-            git fetch origin main # Fetch the latest changes from origin
-            git reset --hard origin/main # Force local main to match remote main, discarding local changes
+            git fetch origin dev # Fetch the latest changes from origin
+            git reset --hard origin/dev # Force local dev to match remote dev, discarding local changes
             git clean -fd # Remove untracked files and directories (like old .next or node_modules if not gitignored properly at some point)
 
             echo "🐍 Setting up and restarting backend..."

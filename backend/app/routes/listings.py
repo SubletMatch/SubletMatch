@@ -29,7 +29,7 @@ s3_client = boto3.client(
 )
 
 # S3 bucket name
-S3_BUCKET = "sublet-match-images"
+S3_BUCKET = os.getenv('S3_BUCKET_NAME', "sublet-match-images")
 
 @router.get("/my", response_model=List[ListingSchema])
 async def get_my_listings(

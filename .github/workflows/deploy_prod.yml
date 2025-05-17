@@ -1,0 +1,86 @@
+name: Deploy to EC2 Prod
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🚀 Starting deployment process..."
+            cd /home/ec2-user/SubletMatch  # Ensure we are in the main project directory
+
+            echo "🔄 Updating repository..."
+            git stash # Stash any untracked/local changes on the server
+            git fetch origin main # Fetch the latest changes from origin
+            git reset --hard origin/main # Force local main to match remote main, discarding local changes
+            git clean -fd # Remove untracked files and directories (like old .next or node_modules if not gitignored properly at some point)
+
+            echo "🐍 Setting up and restarting backend..."
+            # Assuming venv is inside SubletMatch directory
+            if [ -d "venv/bin" ]; then
+              source venv/bin/activate
+            else
+              echo "Python venv not found, attempting to create and activate (adjust as needed)"
+              python3 -m venv venv
+              source venv/bin/activate
+            fi
+            pip install -r backend/requirements.txt
+            sudo systemctl restart backend
+            echo "✅ Backend tasks complete."
+
+            echo "🌐 Setting up and restarting frontend..."
+            cd /home/ec2-user/SubletMatch/sublet-match # Navigate to Next.js project directory
+
+            echo "🧹 Cleaning up old frontend artifacts..."
+            rm -rf .next
+            rm -rf node_modules # Ensures fresh install, helps with potential corruption
+
+            echo "📦 Installing frontend dependencies (this might take a while)..."
+            npm install &
+            NPM_PID=$!
+            echo "⏳ Waiting for npm install (PID: $NPM_PID)... Current memory:"
+            free -h
+            while kill -0 $NPM_PID 2>/dev/null; do
+              echo "--- Memory usage during npm install ---"
+              free -h
+              sleep 5 # Check every 5 seconds
+            done
+            wait $NPM_PID
+            if [ $? -ne 0 ]; then
+              echo "❌ npm install failed!"
+              exit 1
+            fi
+            echo "✅ npm install complete."
+
+            echo "🛠️ Building frontend (this might also take a while)..."
+            # NODE_ENV=production is critical for `next build` to create an optimized production build
+            export NODE_ENV=production
+            npm run build &
+            BUILD_PID=$!
+            echo "⏳ Waiting for npm run build (PID: $BUILD_PID)... Current memory:"
+            free -h
+            while kill -0 $BUILD_PID 2>/dev/null; do
+              echo "--- Memory usage during npm build ---"
+              free -h
+              sleep 5 # Check every 5 seconds
+            done
+            wait $BUILD_PID
+            if [ $? -ne 0 ]; then
+              echo "❌ npm run build failed!"
+              exit 1
+            fi
+            echo "✅ npm run build complete."
+
+            sudo systemctl restart frontend
+            echo "✅ Frontend service restarted."
+            
+            echo "🎉 Deployment finished successfully!"
