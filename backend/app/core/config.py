@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     LOCAL_PASSWORD: str
     FRONTEND_URL: str
     S3_BUCKET_NAME: str
+    APP_ENV: str
 
     class Config:
         env_file = ".env"
