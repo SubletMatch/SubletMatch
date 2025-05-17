@@ -1,9 +1,12 @@
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .routes import auth, listings, message, health, public_key
 from .core.database import engine, Base
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
