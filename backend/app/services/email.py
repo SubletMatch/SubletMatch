@@ -64,3 +64,29 @@ def send_password_reset_email(user_email: str, reset_token: str) -> bool:
     except Exception as e:
         logging.error(f"Error sending password reset email to {user_email}: {e}")
         return False 
+    
+def send_verification_email(user_email: str, user_name: str, token: str) -> bool:
+    verify_link = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    message = Mail(
+        from_email=settings.SENDGRID_FROM_EMAIL,
+        to_emails=user_email,
+        subject="Verify Your LeaseLink Email",
+        html_content=f"""
+        <html>
+        <body>
+            <h2>Hello {user_name}, verify your email!</h2>
+            <p>Please confirm your email address to activate your LeaseLink account.</p>
+            <a href="{verify_link}" style="padding:10px 20px;background:#0070f3;color:#fff;text-decoration:none;border-radius:5px;">Verify Email</a>
+            <p>This link will expire in 1 hour.</p>
+        </body>
+        </html>
+        """
+    )
+    try:
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        response = sg.send(message)
+        logging.info(f"Verification email sent to {user_email}, status code: {response.status_code}")
+        return True
+    except Exception as e:
+        logging.error(f"Error sending verification email: {e}")
+        return False

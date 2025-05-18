@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routes import auth, listings, message, health, public_key
+from .routes import auth, listings, message, health, public_key, verification
 from .core.database import engine, Base
 
 
@@ -52,6 +52,7 @@ app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(message.router, prefix="/api/v1/messages", tags=['messages'])
 app.include_router(public_key.router, prefix="/api/v1/keys", tags=["keys"])
+app.include_router(verification.router, prefix="/api/v1/verification", tags=["verification"])
 
 from fastapi.routing import APIRoute
 
