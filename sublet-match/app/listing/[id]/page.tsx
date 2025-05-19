@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { SaveButton } from "@/components/save-button";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -70,8 +70,6 @@ export default function ListingPage({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [message, setMessage] = useState("");
   const [listing, setListing] = useState<Listing | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
-  const [initiallySaved, setInitiallySaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [listingId, setListingId] = useState<string | null>(null);
@@ -89,41 +87,22 @@ export default function ListingPage({
   }, [id]);
 
   useEffect(() => {
-    const fetchListingAndUser = async () => {
+    const fetchListing = async () => {
       if (!listingId) return;
-  
+
       try {
-        const token = authService.getToken();
-        if (!token) {
-          router.push("/signin");
-          return;
-        }
-  
-        // Fetch both listing and current user
-        const [listingResponse, currentUser] = await Promise.all([
-          fetch(`${API_URL}/listings/${listingId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          userService.getCurrentUser(token)
-        ]);
-  
-        if (!listingResponse.ok) {
+        const response = await fetch(`${API_URL}/listings/${listingId}`, {
+          headers: {
+            Authorization: `Bearer ${authService.getToken()}`,
+          },
+        });
+
+        if (!response.ok) {
           throw new Error("Failed to fetch listing");
         }
-  
-        const listingData = await listingResponse.json();
-        setListing(listingData);
-        setCurrentUser(currentUser);
-  
-        // Check if this listing is saved
-        if (currentUser?.id) {
-          const savedResponse = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
-          const savedListings = await savedResponse.json();
-          setInitiallySaved(savedListings.some((l: any) => l.id === listingId));
-        }
-  
+
+        const data = await response.json();
+        setListing(data);
       } catch (err) {
         setError("Failed to load listing");
         console.error("Error fetching listing:", err);
@@ -131,9 +110,9 @@ export default function ListingPage({
         setIsLoading(false);
       }
     };
-  
+
     if (authService.isAuthenticated()) {
-      fetchListingAndUser();
+      fetchListing();
     } else {
       router.push("/signin");
     }
@@ -174,13 +153,6 @@ export default function ListingPage({
         if (!currentUser?.id) {
           throw new Error("Could not get current user information");
         }
-        setCurrentUser(currentUser); // 👈 Save to state
-
-        // 🧠 NEW: check if this listing is saved
-        const check = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
-        const savedListings = await check.json();
-        setInitiallySaved(savedListings.some((l: any) => l.id === id));  // use `id`, not listing.id, since listing isn’t set yet
-
 
         console.log("Current user:", currentUser);
         console.log("Listing user:", listing.user);
@@ -374,20 +346,16 @@ export default function ListingPage({
                   {listing.title}
                 </h1>
                 <div className="flex items-center gap-2 mt-2 md:mt-0">
-                  {currentUser && listing && (
-                    <SaveButton
-                      userId={currentUser.id}
-                      listingId={listing.id}
-                      initiallySaved={initiallySaved}
-                    />
-                  )}
+                  <Button variant="outline" size="sm">
+                    <Heart className="mr-1 h-4 w-4" />
+                    Save
+                  </Button>
                   <Button variant="outline" size="sm">
                     <Share2 className="mr-1 h-4 w-4" />
                     Share
                   </Button>
                 </div>
               </div>
-
 
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <MapPin className="h-4 w-4" />
