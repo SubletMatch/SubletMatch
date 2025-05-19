@@ -89,22 +89,41 @@ export default function ListingPage({
   }, [id]);
 
   useEffect(() => {
-    const fetchListing = async () => {
+    const fetchListingAndUser = async () => {
       if (!listingId) return;
-
+  
       try {
-        const response = await fetch(`${API_URL}/listings/${listingId}`, {
-          headers: {
-            Authorization: `Bearer ${authService.getToken()}`,
-          },
-        });
-
-        if (!response.ok) {
+        const token = authService.getToken();
+        if (!token) {
+          router.push("/signin");
+          return;
+        }
+  
+        // Fetch both listing and current user
+        const [listingResponse, currentUser] = await Promise.all([
+          fetch(`${API_URL}/listings/${listingId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          userService.getCurrentUser(token)
+        ]);
+  
+        if (!listingResponse.ok) {
           throw new Error("Failed to fetch listing");
         }
-
-        const data = await response.json();
-        setListing(data);
+  
+        const listingData = await listingResponse.json();
+        setListing(listingData);
+        setCurrentUser(currentUser);
+  
+        // Check if this listing is saved
+        if (currentUser?.id) {
+          const savedResponse = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
+          const savedListings = await savedResponse.json();
+          setInitiallySaved(savedListings.some((l: any) => l.id === listingId));
+        }
+  
       } catch (err) {
         setError("Failed to load listing");
         console.error("Error fetching listing:", err);
@@ -112,9 +131,9 @@ export default function ListingPage({
         setIsLoading(false);
       }
     };
-
+  
     if (authService.isAuthenticated()) {
-      fetchListing();
+      fetchListingAndUser();
     } else {
       router.push("/signin");
     }

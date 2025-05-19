@@ -1,10 +1,13 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export async function saveListing(userId: string, listingId: string) {
-  const res = await fetch(`${API_URL}/saved/saved-listings/`, {
+  const url = new URL(`${API_URL}/saved/saved-listings/`);
+  url.searchParams.append("user_id", userId);
+  url.searchParams.append("listing_id", listingId);
+
+  const res = await fetch(url.toString(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, listing_id: listingId }),
   });
   if (!res.ok) throw new Error("Failed to save listing");
 }
