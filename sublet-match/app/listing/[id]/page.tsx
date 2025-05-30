@@ -91,39 +91,28 @@ export default function ListingPage({
   useEffect(() => {
     const fetchListingAndUser = async () => {
       if (!listingId) return;
-  
+
       try {
-        const token = authService.getToken();
-        if (!token) {
-          router.push("/signin");
-          return;
-        }
-  
-        // Fetch both listing and current user
-        const [listingResponse, currentUser] = await Promise.all([
-          fetch(`${API_URL}/listings/${listingId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          userService.getCurrentUser(token)
-        ]);
-  
+        // Fetch listing without auth
+        const listingResponse = await fetch(`${API_URL}/listings/${listingId}`);
         if (!listingResponse.ok) {
           throw new Error("Failed to fetch listing");
         }
-  
         const listingData = await listingResponse.json();
         setListing(listingData);
-        setCurrentUser(currentUser);
-  
-        // Check if this listing is saved
-        if (currentUser?.id) {
-          const savedResponse = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
-          const savedListings = await savedResponse.json();
-          setInitiallySaved(savedListings.some((l: any) => l.id === listingId));
+
+        // Only fetch user and saved status if authenticated
+        const token = authService.getToken();
+        if (token) {
+          const currentUser = await userService.getCurrentUser(token);
+          setCurrentUser(currentUser);
+
+          if (currentUser?.id) {
+            const savedResponse = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
+            const savedListings = await savedResponse.json();
+            setInitiallySaved(savedListings.some((l: any) => l.id === listingId));
+          }
         }
-  
       } catch (err) {
         setError("Failed to load listing");
         console.error("Error fetching listing:", err);
@@ -131,12 +120,8 @@ export default function ListingPage({
         setIsLoading(false);
       }
     };
-  
-    if (authService.isAuthenticated()) {
-      fetchListingAndUser();
-    } else {
-      router.push("/signin");
-    }
+
+    fetchListingAndUser();
   }, [router, listingId]);
 
   useEffect(() => {
@@ -174,9 +159,9 @@ export default function ListingPage({
         if (!currentUser?.id) {
           throw new Error("Could not get current user information");
         }
-        setCurrentUser(currentUser); // 👈 Save to state
+        setCurrentUser(currentUser); // 
 
-        // 🧠 NEW: check if this listing is saved
+        // NEW: check if this listing is saved
         const check = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
         const savedListings = await check.json();
         setInitiallySaved(savedListings.some((l: any) => l.id === id));  // use `id`, not listing.id, since listing isn’t set yet
@@ -533,9 +518,13 @@ export default function ListingPage({
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                     />
-                    <Button className="w-full" onClick={handleSendMessage}>
+                    <Button 
+                      className="w-full"
+                      onClick={handleSendMessage}
+                      disabled={!isAuthenticated}
+                    >
                       <MessageSquare className="mr-2 h-4 w-4" />
-                      Send Message
+                      {isAuthenticated ? "Send Message" : "Log in to send message"}
                     </Button>
                   </div>
                 </CardContent>
