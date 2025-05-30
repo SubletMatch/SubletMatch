@@ -105,7 +105,7 @@ export default function Home() {
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/listings">
+                  <Link href="/find">
                     <Button size="lg" variant="outline" className="w-full">
                       Find a Sublet
                       <Search className="ml-2 h-4 w-4" />
