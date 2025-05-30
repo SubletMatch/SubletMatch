@@ -54,7 +54,7 @@ export default function Home() {
           </span>
           <nav className="hidden md:flex items-center gap-6">
             <Link
-              href="/signin"
+              href="/find"
               className="text-sm font-medium hover:text-primary"
             >
               Find a Sublet
@@ -105,7 +105,7 @@ export default function Home() {
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/signin">
+                  <Link href="/listings">
                     <Button size="lg" variant="outline" className="w-full">
                       Find a Sublet
                       <Search className="ml-2 h-4 w-4" />
@@ -156,7 +156,7 @@ export default function Home() {
 
               {/* Card 2 - Find a Sublet */}
               <div className="h-full">
-                <Link href="/signin?redirect=find" className="h-full">
+                <Link href="/find" className="h-full">
                   <div className="flex h-full flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm hover:shadow-md transition cursor-pointer">
                     <div className="rounded-full bg-primary/10 p-4">
                       <Search className="h-6 w-6 text-primary" />
@@ -183,66 +183,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
-        <section className="py-12 md:py-24 bg-muted">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  Featured Sublets
-                </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  Check out some of our most popular listings.
-                </p>
-              </div>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 py-8">
-              {[1, 2, 3].map((i) => (
-                <Link href="/signin" key={i} className="group">
-                  <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                    <div className="aspect-video w-full overflow-hidden">
-                      <img
-                        alt={`Featured Property ${i}`}
-                        className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                        src={
-                          i === 1
-                            ? "/ovation_madison.jpg"
-                            : i === 2
-                            ? "/Parkline_miami.jpg"
-                            : "/college_apt.jpg"
-                        }
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold">
-                        {i === 1
-                          ? "Ovation Madison"
-                          : i === 2
-                          ? "Parkline Miami"
-                          : "College Apartment"}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {i === 1
-                          ? "Luxury living in Madison"
-                          : i === 2
-                          ? "Modern apartments in Miami"
-                          : "Perfect for students"}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <div className="flex justify-center mt-8">
-              <Link href="/signin">
-                <Button variant="outline" size="lg">
-                  View All Listings
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        </section> 
         <section className="py-12 md:py-24 bg-background">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
@@ -270,7 +211,7 @@ export default function Home() {
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/signin">
+                  <Link href="/find">
                     <Button size="lg" variant="outline" className="w-full">
                       Find a Sublet
                       <Search className="ml-2 h-4 w-4" />

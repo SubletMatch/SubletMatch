@@ -155,6 +155,7 @@ async def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_d
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
     user.password_hash = get_password_hash(data.new_password)
+    user.is_verified = True 
     db.commit()
     # Invalidate token
     del reset_tokens[data.token]
