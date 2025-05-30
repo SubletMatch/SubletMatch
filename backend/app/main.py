@@ -55,13 +55,8 @@ app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
 app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(message.router, prefix="/api/v1/messages", tags=['messages'])
 app.include_router(public_key.router, prefix="/api/v1/keys", tags=["keys"])
-<<<<<<< HEAD
 app.include_router(verification.router, prefix="/api/v1/verification", tags=["verification"])
-
-from fastapi.routing import APIRoute
-=======
 app.include_router(saved_listings.router, prefix="/api/v1/saved", tags=["saved_listings"])
->>>>>>> save_listing
 
 @app.get("/debug/messages-routes")
 def debug_routes():
