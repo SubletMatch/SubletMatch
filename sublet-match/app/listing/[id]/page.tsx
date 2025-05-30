@@ -381,10 +381,35 @@ export default function ListingPage({
                       initiallySaved={initiallySaved}
                     />
                   )}
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const url = `${window.location.origin}/listing/${listing.id}`;
+                      try {
+                        if (navigator.share) {
+                          await navigator.share({ title: listing.title, url });
+                        } else {
+                          await navigator.clipboard.writeText(url);
+                          toast({
+                            title: "Link copied!",
+                            description: "Listing URL copied to your clipboard.",
+                          });
+                        }
+                      } catch (err) {
+                        console.error("Failed to share:", err);
+                        toast({
+                          title: "Error",
+                          description: "Could not share this listing.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
                     <Share2 className="mr-1 h-4 w-4" />
                     Share
                   </Button>
+
                 </div>
               </div>
 
