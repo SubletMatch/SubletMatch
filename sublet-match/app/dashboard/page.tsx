@@ -98,7 +98,7 @@ export default function DashboardPage() {
     const fetchUserData = async () => {
       const token = authService.getToken();
       if (!token) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
 
@@ -117,7 +117,7 @@ export default function DashboardPage() {
           const axiosError = error as { response?: { status?: number } };
           if (axiosError.response?.status === 401) {
             authService.logout();
-            router.push("/signin");
+            router.push("/");
           }
         }
       }
@@ -178,7 +178,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     authService.logout();
-    router.push("/signin");
+    router.push("/");
   };
 
   const handleDeleteListing = async (listingId: string) => {

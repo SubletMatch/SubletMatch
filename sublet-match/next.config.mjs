@@ -8,8 +8,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    domains: [process.env.NEXT_PUBLIC_S3_BUCKET_DOMAIN],
+    domains: [process.env.NEXT_PUBLIC_S3_BUCKET_DOMAIN || 'build-and-test'],
   },
 }
-
 export default nextConfig

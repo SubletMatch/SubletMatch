@@ -14,7 +14,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { useRouter } from "next/navigation";
-
+import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -206,14 +206,21 @@ export default function FindPage() {
       </header>
       <main className="flex-1">
         <div className="container py-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Find a Sublet
-              </h1>
+              <h1 className="text-3xl font-bold tracking-tight">Find a Sublet</h1>
               <p className="text-muted-foreground mt-1">
                 Browse available sublets for your summer plans
               </p>
+              
+              {isAuthenticated && (
+                <Link href="/saved">
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <Heart className="mr-2 h-4 w-4" />
+                    View Saved Listings
+                  </Button>
+                </Link>
+              )}
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative w-full md:w-[300px]">

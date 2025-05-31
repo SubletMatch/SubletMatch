@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-
+import { SaveButton } from "@/components/save-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -70,6 +70,8 @@ export default function ListingPage({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [message, setMessage] = useState("");
   const [listing, setListing] = useState<Listing | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+  const [initiallySaved, setInitiallySaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [listingId, setListingId] = useState<string | null>(null);
@@ -87,22 +89,30 @@ export default function ListingPage({
   }, [id]);
 
   useEffect(() => {
-    const fetchListing = async () => {
+    const fetchListingAndUser = async () => {
       if (!listingId) return;
 
       try {
-        const response = await fetch(`${API_URL}/listings/${listingId}`, {
-          headers: {
-            Authorization: `Bearer ${authService.getToken()}`,
-          },
-        });
-
-        if (!response.ok) {
+        // Fetch listing without auth
+        const listingResponse = await fetch(`${API_URL}/listings/${listingId}`);
+        if (!listingResponse.ok) {
           throw new Error("Failed to fetch listing");
         }
+        const listingData = await listingResponse.json();
+        setListing(listingData);
 
-        const data = await response.json();
-        setListing(data);
+        // Only fetch user and saved status if authenticated
+        const token = authService.getToken();
+        if (token) {
+          const currentUser = await userService.getCurrentUser(token);
+          setCurrentUser(currentUser);
+
+          if (currentUser?.id) {
+            const savedResponse = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
+            const savedListings = await savedResponse.json();
+            setInitiallySaved(savedListings.some((l: any) => l.id === listingId));
+          }
+        }
       } catch (err) {
         setError("Failed to load listing");
         console.error("Error fetching listing:", err);
@@ -111,11 +121,7 @@ export default function ListingPage({
       }
     };
 
-    if (authService.isAuthenticated()) {
-      fetchListing();
-    } else {
-      router.push("/signin");
-    }
+    fetchListingAndUser();
   }, [router, listingId]);
 
   useEffect(() => {
@@ -153,6 +159,13 @@ export default function ListingPage({
         if (!currentUser?.id) {
           throw new Error("Could not get current user information");
         }
+        setCurrentUser(currentUser); // 
+
+        // NEW: check if this listing is saved
+        const check = await fetch(`${API_URL}/saved/saved-listings/?user_id=${currentUser.id}`);
+        const savedListings = await check.json();
+        setInitiallySaved(savedListings.some((l: any) => l.id === id));  // use `id`, not listing.id, since listing isn’t set yet
+
 
         console.log("Current user:", currentUser);
         console.log("Listing user:", listing.user);
@@ -346,16 +359,61 @@ export default function ListingPage({
                   {listing.title}
                 </h1>
                 <div className="flex items-center gap-2 mt-2 md:mt-0">
-                  <Button variant="outline" size="sm">
-                    <Heart className="mr-1 h-4 w-4" />
-                    Save
-                  </Button>
-                  <Button variant="outline" size="sm">
+                  {currentUser && listing && (
+                    <SaveButton
+                      userId={currentUser.id}
+                      listingId={listing.id}
+                      initiallySaved={initiallySaved}
+                    />
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const shareUrl = window.location.href;
+                    
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: listing.title,
+                            url: shareUrl,
+                          });
+                          // You could optionally show a success toast here
+                        } catch (err: any) {
+                          // Only show error if it's not a user cancel
+                          if (err.name !== "AbortError") {
+                            toast({
+                              title: "Error",
+                              description: "Could not share this listing.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                      } else {
+                        try {
+                          await navigator.clipboard.writeText(shareUrl);
+                          toast({
+                            title: "Link copied!",
+                            description: "Listing URL copied to your clipboard.",
+                          });
+                        } catch (err) {
+                          toast({
+                            title: "Error",
+                            description: "Could not copy link to clipboard.",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                    
+                  >
                     <Share2 className="mr-1 h-4 w-4" />
                     Share
                   </Button>
+
                 </div>
               </div>
+
 
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <MapPin className="h-4 w-4" />
@@ -460,9 +518,13 @@ export default function ListingPage({
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                     />
-                    <Button className="w-full" onClick={handleSendMessage}>
+                    <Button 
+                      className="w-full"
+                      onClick={handleSendMessage}
+                      disabled={!isAuthenticated}
+                    >
                       <MessageSquare className="mr-2 h-4 w-4" />
-                      Send Message
+                      {isAuthenticated ? "Send Message" : "Log in to send message"}
                     </Button>
                   </div>
                 </CardContent>

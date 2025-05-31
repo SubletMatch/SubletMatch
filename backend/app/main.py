@@ -3,9 +3,12 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute  # from save_listing
 
-from .routes import auth, listings, message, health, public_key, verification
+from .routes import auth, listings, message, health, public_key, verification, saved_listings  # both routes
+
 from .core.database import engine, Base
+
 
 
 # Create database tables
@@ -53,8 +56,7 @@ app.include_router(listings.router, prefix="/api/v1/listings", tags=["listings"]
 app.include_router(message.router, prefix="/api/v1/messages", tags=['messages'])
 app.include_router(public_key.router, prefix="/api/v1/keys", tags=["keys"])
 app.include_router(verification.router, prefix="/api/v1/verification", tags=["verification"])
-
-from fastapi.routing import APIRoute
+app.include_router(saved_listings.router, prefix="/api/v1/saved", tags=["saved_listings"])
 
 @app.get("/debug/messages-routes")
 def debug_routes():
