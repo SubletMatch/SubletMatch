@@ -178,7 +178,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     authService.logout();
-    router.push("/signin");
+    router.push("/");
   };
 
   const handleDeleteListing = async (listingId: string) => {
