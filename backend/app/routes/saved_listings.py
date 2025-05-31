@@ -23,16 +23,19 @@ def save_listing(user_id: UUID, listing_id: UUID, db: Session = Depends(get_db))
 
     return {"status": "saved"}
 
+from sqlalchemy.orm import selectinload
+
 @router.get("/saved-listings/")
 def get_saved_listings(user_id: UUID, db: Session = Depends(get_db)):
     saved = (
         db.query(Listing)
         .join(SavedListing, SavedListing.listing_id == Listing.id)
         .filter(SavedListing.user_id == user_id)
+        .options(selectinload(Listing.images))  # ✅ This is the only thing missing
         .all()
     )
-
     return saved
+
 
 @router.delete("/saved-listings/")
 def unsave_listing(user_id: UUID, listing_id: UUID, db: Session = Depends(get_db)):
