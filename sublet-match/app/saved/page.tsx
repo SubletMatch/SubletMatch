@@ -16,7 +16,7 @@ interface Listing {
   price: number;
   city: string;
   state: string;
-  images: { image_url: string }[];
+  images: { image_url?: string; url?: string }[];
 }
 
 export default function SavedListingsPage() {
@@ -85,36 +85,47 @@ export default function SavedListingsPage() {
             <div className="text-muted-foreground">You have no saved listings.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {listings.map((listing) => (
-                <Link
-                  key={listing.id}
-                  href={`/listing/${listing.id}`}
-                  className="group"
-                >
-                  <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
-                    <div className="aspect-video relative">
-                      {listing.images && listing.images.length > 0 ? (
-                        <img
-                          src={listing.images[0].image_url}
-                          alt={listing.title}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          No image
-                        </div>
-                      )}
+              {listings.map((listing) => {
+                // 🪵 Log the listing so you can check image structure
+                console.log("Saved listing:", JSON.stringify(listing, null, 2));
+
+
+                const image =
+                  listing.images?.[0]?.image_url ||
+                  listing.images?.[0]?.url ||
+                  "";
+
+                return (
+                  <Link
+                    key={listing.id}
+                    href={`/listing/${listing.id}`}
+                    className="group"
+                  >
+                    <div className="overflow-hidden rounded-lg border bg-background shadow-sm transition-all hover:shadow-md">
+                      <div className="aspect-video relative">
+                        {image ? (
+                          <img
+                            src={image}
+                            alt={listing.title}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold text-lg">{listing.title}</h3>
+                        <p className="text-muted-foreground">
+                          {listing.city}, {listing.state}
+                        </p>
+                        <p className="mt-2 font-medium">${listing.price}/month</p>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg">{listing.title}</h3>
-                      <p className="text-muted-foreground">
-                        {listing.city}, {listing.state}
-                      </p>
-                      <p className="mt-2 font-medium">${listing.price}/month</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
