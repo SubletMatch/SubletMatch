@@ -70,6 +70,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* ✅ Load Inter font from Google Fonts */}
+        <script
+          defer
+          data-domain="leaselink.app"
+          src="https://analytics.leaselink.app/js/script.js"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"
           rel="stylesheet"
