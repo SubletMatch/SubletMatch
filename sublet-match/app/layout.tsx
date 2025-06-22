@@ -74,7 +74,8 @@ export default function RootLayout({
           defer
           data-domain="leaselink.app"
           src="https://analytics.leaselink.app/js/analytics.js"
-        ></script>  
+          data-api="/api/plausible"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"
           rel="stylesheet"
