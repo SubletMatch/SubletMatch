@@ -76,6 +76,7 @@ export default function RootLayout({
           src="https://analytics.leaselink.app/js/analytics.js"
           data-api="https://analytics.leaselink.app/api/track"
         />
+
         <link
           href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"
           rel="stylesheet"
