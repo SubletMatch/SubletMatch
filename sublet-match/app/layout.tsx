@@ -73,8 +73,8 @@ export default function RootLayout({
         <script
           defer
           data-domain="leaselink.app"
-          src="https://analytics.leaselink.app/js/analytics.js"
-          data-api="https://analytics.leaselink.app/api/track"
+          src="https://leaselink.app/js/analytics.js"
+          data-api="https://leaselink.app/api/track"
         />
 
         <link
